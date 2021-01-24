@@ -43,3 +43,6 @@ class ComponentLoader:
 				o.destroy()
 			except:
 				pass
+
+	def Unloadcomponent(self, _=None):
+		self.UnloadComponent()
