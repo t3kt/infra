@@ -13,7 +13,8 @@ class ComponentLoader:
 	@property
 	def Component(self) -> 'Optional[COMP]':
 		for o in self.ownerComp.children:
-			return o
+			if o.isCOMP:
+				return o
 
 	@property
 	def ComponentTox(self) -> 'Optional[str]':
@@ -35,7 +36,7 @@ class ComponentLoader:
 
 	def UnloadComponent(self):
 		for o in self.ownerComp.children:
-			if not o.valid:
+			if not o.isCOMP or not o.valid:
 				continue
 			# noinspection PyBroadException
 			try:
