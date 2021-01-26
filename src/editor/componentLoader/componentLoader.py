@@ -49,7 +49,7 @@ class ComponentLoader:
 		if template:
 			comp = self.ownerComp.copy(template, name=name, includeDocked=False)
 		else:
-			comp = self.ownerComp.create(compType or baseCOMP, name=name)
+			comp = self.ownerComp.create(compType or baseCOMP, name)
 		comp.name = name
 		convertedPath = _convertPath(tox)
 		comp.par.externaltox = convertedPath
