@@ -70,6 +70,18 @@ class ComponentLoader:
 	def Unloadcomponent(self, _=None):
 		self.UnloadComponent()
 
+	def SaveComponent(self, tox: 'Optional[Union[str, Path]]' = None):
+		comp = self.Component
+		if tox:
+			tox = Path(tox)
+			comp.par.externaltox = tox.as_posix()
+		else:
+			tox = Path(self.ComponentTox)
+		comp.save(tox.as_posix(), createFolders=True)
+
+	def Savecomponent(self, _=None):
+		self.SaveComponent()
+
 def _convertPath(path: 'Union[str, Path]'):
 	if isinstance(path, Path):
 		return path.as_posix()
