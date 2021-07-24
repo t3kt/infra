@@ -44,3 +44,33 @@ def navigateTo(o: 'Union[OP, COMP]', name: Optional[str] = None, popup=False, go
 		o.current = True
 		o.selected = True
 		pane.homeSelected(zoom=False)
+
+def cleanDict(d):
+	if not d:
+		return None
+	result = {}
+	for key, val in d.items():
+		if val is None:
+			continue
+		if isinstance(val, dict):
+			val = cleanDict(val)
+		if isinstance(val, (str, list, dict, tuple)) and len(val) == 0:
+			continue
+		result[key] = val
+	return result
+
+def mergeDicts(*parts):
+	x = {}
+	for part in parts:
+		if part:
+			x.update(part)
+	return x
+
+def excludeKeys(d, keys):
+	if not d:
+		return {}
+	return {
+		key: val
+		for key, val in d.items()
+		if key not in keys
+	}
