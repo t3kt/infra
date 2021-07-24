@@ -1380,6 +1380,7 @@ _AnyPanelCompT = _T.Union[
 	opviewerCOMP, parameterCOMP, selectCOMP, tableCOMP]
 
 _AnyCompT = _T.Union[COMP, _AnyPanelCompT, windowCOMP, timeCOMP]
+AnyCompT = _AnyCompT
 
 class VFSFile:
 	name: str
@@ -1662,6 +1663,7 @@ class MAT(OP):
 	pass
 
 _AnyOpT = _T.Union[OP, DAT, COMP, CHOP, SOP, TOP, MAT, '_AnyCompT']
+AnyOpT = _AnyOpT
 
 baseCOMP = COMP
 panelCOMP = PanelCOMP
