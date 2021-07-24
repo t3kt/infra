@@ -18,6 +18,9 @@ class NetworkToolsPanel:
 	def setTagOnSelectedBuildLock(self, state: bool):
 		self._applyTagToSelected(infraTools.InfraTags.buildLock, state)
 
+	def setTagOnSelectedBuildExclude(self, state: bool):
+		self._applyTagToSelected(infraTools.InfraTags.buildExclude, state)
+
 	def _applyTagToSelected(self, tag: 'infraTools.Tag', state: bool):
 		self._forEachSelected(lambda o: tag.apply(o, state))
 
