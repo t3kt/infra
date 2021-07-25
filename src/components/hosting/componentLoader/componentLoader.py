@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from typing import List, Optional, Type, Union
 
@@ -154,8 +153,7 @@ class ComponentLoader(CallbacksExt):
 			return
 		path = Path(specPath)
 		path.parent.mkdir(parents=True)
-		with path.open(mode='w') as f:
-			json.dump(spec.toDict(), f)
+		spec.saveSpecFile(path)
 		self.DoCallback('onComponentSpecSaved', {
 			'comp': self.Component,
 			'spec': spec,

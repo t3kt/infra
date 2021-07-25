@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass, field
+import json
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -48,6 +49,11 @@ class ComponentSpec:
 				if k not in excludeKeys
 			}
 		return cleanDict(d)
+
+	def saveSpecFile(self, file: Path):
+		obj = self.toDict()
+		with file.open(mode='w') as f:
+			json.dump(obj, f, indent='  ')
 
 	@classmethod
 	def mergeSpecs(cls, *specs: 'ComponentSpec'):
@@ -161,3 +167,57 @@ def _getParamSpec(par: Par) -> Optional[ValueOrExpr]:
 	if par.isPulse or par.isMomentary:
 		return None
 	return par.eval()
+
+@dataclass
+class WorkspaceSpec:
+	sceneFolder: Optional[str] = None
+
+	# Defaults to *.tox
+	sceneFilePattern: Optional[str] = None
+
+	presetFolder: Optional[str] = None
+
+	# Defaults to *.json
+	presetFilePattern: Optional[str] = None
+
+	autoRefreshFiles: bool = True
+
+	settings: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+
+	def toObj(self, forFile: Optional[Path] = None):
+		if forFile and self.sceneFolder and Path(self.sceneFolder) == forFile.parent:
+			folder = None
+		else:
+			folder = self.sceneFolder
+		return cleanDict({
+			'sceneFolder': folder,
+			'sceneFilePattern': self.sceneFilePattern,
+			'presetFolder': self.presetFolder,
+			'presetFilePattern': self.presetFilePattern,
+			'autoRefreshFiles': self.autoRefreshFiles,
+			'settings': self.settings or None,
+		})
+
+	def saveSpecFile(self, file: Path):
+		obj = self.toObj(forFile=file)
+		with file.open(mode='w') as f:
+			json.dump(obj, f, indent='  ')
+
+	@classmethod
+	def fromObj(cls, obj: dict):
+		return cls(**obj)
+
+	@classmethod
+	def fromFolder(cls, folder: Path):
+		return cls(
+			sceneFolder=folder.as_posix(),
+		)
+
+	@classmethod
+	def fromSpecFile(cls, file: Path):
+		with file.open(mode='r') as f:
+			obj = json.load(f)
+		spec = cls.fromObj(obj)
+		if spec.sceneFolder is None:
+			spec.sceneFolder = file.parent
+		return spec
