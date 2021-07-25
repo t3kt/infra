@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass, field
 import logging
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from infraCommon import cleanDict
@@ -75,7 +76,7 @@ class ComponentSpec:
 			self.master,
 		)
 
-	def createComp(self, destination: COMP) -> COMP:
+	def createComp(self, destination: COMP, resetDefault=False, includeParams: List[Par] = None) -> COMP:
 		if self.copyOf and not self.master:
 			if isinstance(self.copyOf, Dict):
 				self.master = destination.evalExpression(self.copyOf['$'])
@@ -91,12 +92,16 @@ class ComponentSpec:
 			raise Exception(f'Invalid component spec {self!r}')
 		if self.name:
 			comp.name = self.name
+		elif self.tox:
+			comp.name = Path(self.tox).stem
 		# in case the name need to change for uniqueness, this will store the actual name
 		self.name = comp.name
-		self.applyParams(comp)
+		self.applyParams(comp, resetDefault, includeParams)
 		return comp
 
 	def applyParams(self, comp: OP, resetDefault=False, includeParams: List[Par] = None):
+		if self.tox:
+			comp.par.externaltox = self.tox
 		if not self.pars:
 			return
 		toReset = set((resetDefault and includeParams) or [])
