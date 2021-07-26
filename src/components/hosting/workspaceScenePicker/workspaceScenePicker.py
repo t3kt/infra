@@ -16,7 +16,46 @@ if False:
 
 	class _SettingsPar:
 		Showpresets: BoolParamT
+
+	class _ListConfigPar:
+		Bgcolorr: 'FloatParamT'
+		Bgcolorg: 'FloatParamT'
+		Bgcolorb: 'FloatParamT'
+
+		Scenetextcolorr: 'FloatParamT'
+		Scenetextcolorg: 'FloatParamT'
+		Scenetextcolorb: 'FloatParamT'
+
+		Scenebgcolorr: 'FloatParamT'
+		Scenebgcolorg: 'FloatParamT'
+		Scenebgcolorb: 'FloatParamT'
+
+		Presettextcolorr: 'FloatParamT'
+		Presettextcolorg: 'FloatParamT'
+		Presettextcolorb: 'FloatParamT'
+
+		Presetbgcolorr: 'FloatParamT'
+		Presetbgcolorg: 'FloatParamT'
+		Presetbgcolorb: 'FloatParamT'
+
+		Rolloverhighlightcolorr: 'FloatParamT'
+		Rolloverhighlightcolorg: 'FloatParamT'
+		Rolloverhighlightcolorb: 'FloatParamT'
+
+		Buttonbgcolorr: 'FloatParamT'
+		Buttonbgcolorg: 'FloatParamT'
+		Buttonbgcolorb: 'FloatParamT'
+
+		Buttonrolloverbgcolorr: 'FloatParamT'
+		Buttonrolloverbgcolorg: 'FloatParamT'
+		Buttonrolloverbgcolorb: 'FloatParamT'
+
+		Selectedhighlightcolorr: 'FloatParamT'
+		Selectedhighlightcolorg: 'FloatParamT'
+		Selectedhighlightcolorb: 'FloatParamT'
+
 	ipar.pickerSettings = _SettingsPar()
+	ipar.listConfig = _ListConfigPar()
 
 try:
 	# noinspection PyUnresolvedReferences
@@ -25,10 +64,11 @@ except ImportError:
 	from _stubs.TDCallbacksExt import CallbacksExt
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class WorkspaceScenePicker(CallbacksExt):
 	def __init__(self, ownerComp: 'COMP'):
-		super(CallbacksExt).__init__(ownerComp)
+		super().__init__(ownerComp)
 		self._itemCollection = _ItemCollection()
 		self._selectedScene = None  # type: Optional[WorkspaceScene]
 		self._selectedPreset = None  # type: Optional[WorkspacePreset]
@@ -52,7 +92,20 @@ class WorkspaceScenePicker(CallbacksExt):
 		listComp.par.reset.pulse()
 
 	def _applyViewSettings(self):
-		raise NotImplementedError()
+		settings = _ViewSettings(
+			showPresets=ipar.pickerSettings.Showpresets.eval(),
+		)
+		self._itemCollection.applyViewSettings(settings)
+		self._refreshList()
+
+	def _isSelectedItem(self, item: Optional['_AnyItemT']):
+		if not item:
+			return False
+		if isinstance(item, WorkspacePreset):
+			return item == self._selectedPreset
+		if isinstance(item, WorkspaceScene):
+			return item == self._selectedScene
+		return False
 
 	def list_onInitCell(self, row: int, col: int, attribs: 'ListAttributes'):
 		item = self._itemCollection.itemForRow(row)
@@ -60,16 +113,17 @@ class WorkspaceScenePicker(CallbacksExt):
 			return
 		if col == 1:
 			attribs.text = item.name
-		if item.isScene:
+		if isinstance(item, WorkspaceScene):
 			if col == 0:
 				if ipar.pickerSettings.Showpresets and item.presets:
 					if item.isExpanded:
 						attribs.top = self.ownerComp.op('collapseIcon')
 					else:
 						attribs.top = self.ownerComp.op('expandIcon')
+				attribs.bgColor = ipar.listConfig.Buttonbgcolorr, ipar.listConfig.Buttonbgcolorg, ipar.listConfig.Buttonbgcolorb, 1
 			elif col == 1:
 				attribs.textOffsetX = 5
-		elif item.isPreset:
+		elif isinstance(item, WorkspacePreset):
 			if col == 1:
 				attribs.textOffsetX = 20
 
@@ -77,7 +131,29 @@ class WorkspaceScenePicker(CallbacksExt):
 		item = self._itemCollection.itemForRow(row)
 		if not item:
 			return
-		pass
+		if isinstance(item, WorkspaceScene):
+			attribs.textColor = ipar.listConfig.Scenetextcolorr, ipar.listConfig.Scenetextcolorg, ipar.listConfig.Scenetextcolorb, 1
+			attribs.bgColor = ipar.listConfig.Scenebgcolorr, ipar.listConfig.Scenebgcolorg, ipar.listConfig.Scenebgcolorb, 1
+		elif isinstance(item, WorkspacePreset):
+			attribs.textColor = ipar.listConfig.Presettextcolorr, ipar.listConfig.Presettextcolorg, ipar.listConfig.Presettextcolorb, 1
+			attribs.bgColor = ipar.listConfig.Presetbgcolorr, ipar.listConfig.Presetbgcolorg, ipar.listConfig.Presetbgcolorb, 1
+		self._setRowSelectedHighlight(row, self._isSelectedItem(item))
+
+	def _setRowSelectedHighlight(self, row: int, selected: bool):
+		self._setRowStatusHighlight(
+			row, selected,
+			(ipar.listConfig.Selectedhighlightcolorr, ipar.listConfig.Selectedhighlightcolorg, ipar.listConfig.Selectedhighlightcolorb, 1))
+
+	def _setRowStatusHighlight(self, row: int, selected: bool, color: tuple):
+		if row < 0:
+			return
+		if not selected:
+			color = 0, 0, 0, 0
+		listComp = self._listComp
+		rowAttribs = listComp.rowAttribs[row]
+		if rowAttribs:
+			rowAttribs.topBorderOutColor = color
+			rowAttribs.bottomBorderOutColor = color
 
 	@staticmethod
 	def list_onInitCol(col: int, attribs: 'ListAttributes'):
@@ -92,6 +168,53 @@ class WorkspaceScenePicker(CallbacksExt):
 		attribs.fontFace = 'Roboto'
 		attribs.fontSizeX = 18
 		attribs.textJustify = JustifyType.CENTERLEFT
+		attribs.bgColor = ipar.listConfig.Bgcolorr, ipar.listConfig.Bgcolorg, ipar.listConfig.Bgcolorb, 1
+
+	def _toggleExpansion(
+			self,
+			item: WorkspaceScene):
+		item.isExpanded = not item.isExpanded
+		self._applyViewSettings()
+
+	def _selectScene(self, scene: Optional[WorkspaceScene], quiet: bool):
+		self._updateSelection(scene, None, quiet=quiet)
+
+	def _selectPreset(self, preset: Optional[WorkspacePreset], quiet: bool):
+		scene = self._itemCollection.getSceneForPreset(preset) if preset else None
+		self._updateSelection(scene, preset, quiet=quiet)
+
+	def _updateSelection(
+			self,
+			scene: WorkspaceScene,
+			preset: Optional[WorkspacePreset],
+			quiet: bool
+	):
+		self._selectedScene = scene
+		self._selectedPreset = preset
+		self._applyViewSettings()
+		if not quiet:
+			self.DoCallback('onSelectionChange', {
+				'scene': scene,
+				'preset': preset,
+			})
+
+	def list_onSelect(self, endRow: int, endCol: int, end: bool):
+		print(f'list_onSelect endRow: {endRow} endCol: {endCol} end: {end}')
+		if not end:
+			return
+		item = self._itemCollection.itemForRow(endRow)
+		print(f'.... item: {item!r}')
+		if not item:
+			return
+		if isinstance(item, WorkspaceScene):
+			if endCol == 0 and item.presets and ipar.pickerSettings.Showpresets:
+				print('...... toggle expansion')
+				self._toggleExpansion(item)
+			else:
+				print('..... select scene')
+				self._selectScene(item, quiet=False)
+		elif isinstance(item, WorkspacePreset):
+			self._selectPreset(item, quiet=False)
 
 @dataclass
 class _ViewSettings:
@@ -161,6 +284,11 @@ class _ItemCollection:
 				self.presets.append(preset)
 
 		self.allItems = self._buildFlatList(None)
+
+	def getSceneForPreset(self, preset: WorkspacePreset):
+		for scene in self.scenes:
+			if scene.toxPath == preset.sceneRelPath:
+				return scene
 
 	def _buildFlatList(self, settings: Optional[_ViewSettings]):
 		settings = settings or _ViewSettings()
