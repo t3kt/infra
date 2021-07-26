@@ -221,3 +221,26 @@ class WorkspaceSpec:
 		if spec.sceneFolder is None:
 			spec.sceneFolder = file.parent
 		return spec
+
+@dataclass
+class WorkspaceItem:
+	relPath: str = None
+	name: str = None
+	timestamp: Optional[int] = None
+
+	isScene: bool = False
+	isPreset: bool = False
+
+@dataclass
+class WorkspaceScene(WorkspaceItem):
+	toxPath: str = None
+	presets: List['WorkspacePreset'] = field(default_factory=list)
+	isExpanded: bool = False
+
+	isScene = True
+
+@dataclass
+class WorkspacePreset(WorkspaceItem):
+	isPreset = True
+	specPath: str = None
+	sceneRelPath: str = None
