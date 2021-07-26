@@ -64,7 +64,6 @@ except ImportError:
 	from _stubs.TDCallbacksExt import CallbacksExt
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 class WorkspaceScenePicker(CallbacksExt):
 	def __init__(self, ownerComp: 'COMP'):
@@ -82,21 +81,17 @@ class WorkspaceScenePicker(CallbacksExt):
 		sceneTable = self.ownerComp.op('scene_table')  # type: DAT
 		presetTable = self.ownerComp.op('preset_table')  # type: DAT
 		self._itemCollection.loadTables(sceneTable, presetTable)
-		self._applyViewSettings()
 		self._refreshList()
 
 	def _refreshList(self):
-		listComp = self._listComp
-		listComp.par.rows = len(self._itemCollection.currentItemList)
-		listComp.par.cols = 2
-		listComp.par.reset.pulse()
-
-	def _applyViewSettings(self):
 		settings = _ViewSettings(
 			showPresets=ipar.pickerSettings.Showpresets.eval(),
 		)
 		self._itemCollection.applyViewSettings(settings)
-		self._refreshList()
+		listComp = self._listComp
+		listComp.par.rows = len(self._itemCollection.currentItemList)
+		listComp.par.cols = 2
+		listComp.par.reset.pulse()
 
 	def _isSelectedItem(self, item: Optional['_AnyItemT']):
 		if not item:
@@ -174,7 +169,7 @@ class WorkspaceScenePicker(CallbacksExt):
 			self,
 			item: WorkspaceScene):
 		item.isExpanded = not item.isExpanded
-		self._applyViewSettings()
+		self._refreshList()
 
 	def _selectScene(self, scene: Optional[WorkspaceScene], quiet: bool):
 		self._updateSelection(scene, None, quiet=quiet)
@@ -191,7 +186,7 @@ class WorkspaceScenePicker(CallbacksExt):
 	):
 		self._selectedScene = scene
 		self._selectedPreset = preset
-		self._applyViewSettings()
+		self._refreshList()
 		if not quiet:
 			self.DoCallback('onSelectionChange', {
 				'scene': scene,
@@ -199,19 +194,15 @@ class WorkspaceScenePicker(CallbacksExt):
 			})
 
 	def list_onSelect(self, endRow: int, endCol: int, end: bool):
-		print(f'list_onSelect endRow: {endRow} endCol: {endCol} end: {end}')
 		if not end:
 			return
 		item = self._itemCollection.itemForRow(endRow)
-		print(f'.... item: {item!r}')
 		if not item:
 			return
 		if isinstance(item, WorkspaceScene):
 			if endCol == 0 and item.presets and ipar.pickerSettings.Showpresets:
-				print('...... toggle expansion')
 				self._toggleExpansion(item)
 			else:
-				print('..... select scene')
 				self._selectScene(item, quiet=False)
 		elif isinstance(item, WorkspacePreset):
 			self._selectPreset(item, quiet=False)
