@@ -87,9 +87,9 @@ class WorkspaceScenePicker(CallbacksExt):
 		settings = _ViewSettings(
 			showPresets=ipar.pickerSettings.Showpresets.eval(),
 		)
-		self._itemCollection.applyViewSettings(settings)
+		self._itemCollection.refreshDisplayItems(settings)
 		listComp = self._listComp
-		listComp.par.rows = len(self._itemCollection.currentItemList)
+		listComp.par.rows = len(self._itemCollection.displayItems)
 		listComp.par.cols = 2
 		listComp.par.reset.pulse()
 
@@ -175,7 +175,7 @@ class WorkspaceScenePicker(CallbacksExt):
 		self._updateSelection(scene, None, quiet=quiet)
 
 	def _selectPreset(self, preset: Optional[WorkspacePreset], quiet: bool):
-		scene = self._itemCollection.getSceneForPreset(preset) if preset else None
+		scene = self._itemCollection.getSceneByTox(preset.sceneRelPath) if preset else None
 		self._updateSelection(scene, preset, quiet=quiet)
 
 	def _updateSelection(
@@ -207,33 +207,72 @@ class WorkspaceScenePicker(CallbacksExt):
 		elif isinstance(item, WorkspacePreset):
 			self._selectPreset(item, quiet=False)
 
+	def SelectScene(
+			self,
+			toxRelPath: Optional[str] = None,
+			scene: Optional[WorkspaceScene] = None,
+			quiet: bool = False,
+	) -> Optional[WorkspaceScene]:
+		if scene:
+			if toxRelPath:
+				raise Exception('Cannot specify both a scene and toxRelPath')
+		else:
+			if not toxRelPath:
+				raise Exception('Must specify either a scene or toxRelPath')
+			scene = self._itemCollection.getSceneByTox(toxRelPath)
+		if not scene:
+			return None
+		self._selectScene(scene, quiet)
+		return scene
+
+	def SelectPreset(
+			self,
+			preset: Optional[WorkspacePreset] = None,
+			presetRelPath: Optional[str] = None,
+			quiet: bool = False,
+	):
+		if preset:
+			if presetRelPath:
+				raise Exception('Cannot specify both a preset and presetRelPath')
+		else:
+			if not presetRelPath:
+				raise Exception('Must specify either a preset or presetRelPath')
+			preset = self._itemCollection.getPresetByPath(presetRelPath)
+		if not preset:
+			return None
+		self._selectPreset(preset, quiet)
+		return preset
+
+	def DeselectScene(self, quiet: bool = False):
+		self._selectScene(None, quiet)
+
+	def DeselectPreset(self, quiet: bool = False):
+		self._selectPreset(None, quiet)
+
 @dataclass
 class _ViewSettings:
 	showPresets: bool = True
+	sortBy: str = 'path'
 
 _AnyItemT = Union[WorkspaceScene, WorkspacePreset]
 
 class _ItemCollection:
-	allItems: List[_AnyItemT]
 	scenes: List[WorkspaceScene]
 	presets: List[WorkspacePreset]
 	displayItems: Optional[List[_AnyItemT]]
 
 	def __init__(self):
-		self.allItems = []
 		self.scenes = []
 		self.presets = []
-		self.displayItems = None
+		self.displayItems = []
 
-	@property
-	def currentItemList(self):
-		return self.displayItems if self.displayItems is not None else self.allItems
-
-	def loadTables(self, sceneTable: 'DAT', presetTable: 'DAT'):
-		self.allItems = []
+	def loadTables(
+			self,
+			sceneTable: 'DAT', presetTable: 'DAT',
+	):
 		self.scenes = []
 		self.presets = []
-		self.displayItems = None
+		self.displayItems = []
 		scenesByTox = {}  # type: Dict[str, WorkspaceScene]
 
 		# relpath
@@ -250,7 +289,7 @@ class _ItemCollection:
 				toxPath=str(sceneTable[sceneRow, 'tox']),
 			)
 			self.scenes.append(scene)
-			scenesByTox[scene.toxPath] = scene
+			scenesByTox[scene.relPath] = scene
 
 		# relpath
 		# name
@@ -274,28 +313,43 @@ class _ItemCollection:
 				scene.presets.append(preset)
 				self.presets.append(preset)
 
-		self.allItems = self._buildFlatList(None)
-
-	def getSceneForPreset(self, preset: WorkspacePreset):
+	def getSceneByTox(self, toxPath: str) -> Optional[WorkspaceScene]:
 		for scene in self.scenes:
-			if scene.toxPath == preset.sceneRelPath:
+			if scene.relPath == toxPath:
 				return scene
 
-	def _buildFlatList(self, settings: Optional[_ViewSettings]):
-		settings = settings or _ViewSettings()
-		items = []
-		for scene in self.scenes:
-			items.append(scene)
-			if settings.showPresets and scene.presets and scene.isExpanded:
-				for preset in scene.presets:
-					items.append(preset)
-		return items
+	def getPresetByPath(self, presetRelPath: str) -> Optional[WorkspacePreset]:
+		for preset in self.presets:
+			if preset.relPath == presetRelPath:
+				return preset
 
-	def applyViewSettings(self, settings: Optional[_ViewSettings]):
-		self.displayItems = self._buildFlatList(settings)
+	def addScene(self, scene: WorkspaceScene):
+		self.scenes.append(scene)
+		for preset in (scene.presets or []):
+			self.presets.append(preset)
+
+	def addPreset(self, preset: WorkspacePreset):
+		scene = self.getSceneByTox(preset.sceneRelPath)
+		if not scene:
+			raise Exception(f'Scene not found for preset, tox: {preset.sceneRelPath!r}')
+		scene.presets.append(preset)
+		self.presets.append(preset)
+
+	def refreshDisplayItems(self, settings: Optional[_ViewSettings]):
+		settings = settings or _ViewSettings()
+		self.displayItems = []
+
+		# if settings.sortBy == 'name':
+		def _sortKey(item: _AnyItemT): return item.relPath
+
+		for scene in sorted(self.scenes, key=_sortKey):
+			self.displayItems.append(scene)
+			if settings.showPresets and scene.presets and scene.isExpanded:
+				for preset in sorted(scene.presets, key=_sortKey):
+					self.displayItems.append(preset)
 
 	def itemForRow(self, row: int) -> Optional[_AnyItemT]:
-		items = self.currentItemList
+		items = self.displayItems
 		if not items or row < 0 or row >= len(items):
 			return None
 		return items[row]
@@ -303,7 +357,7 @@ class _ItemCollection:
 	def rowForItem(self, item: Optional[_AnyItemT]) -> int:
 		if not item:
 			return -1
-		items = self.currentItemList
+		items = self.displayItems
 		if not items:
 			return -1
 		try:
