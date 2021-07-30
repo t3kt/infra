@@ -6,28 +6,37 @@ if False:
 	from _stubs import *
 	from _typeAliases import *
 
-class _MetaParsT(ParCollection):
-	Hostop: 'OPParamT'
-	Helpurl: 'StrParamT'
-	Helpdat: 'OPParamT'
-	Toolkitname: 'StrParamT'
-	Toolkitversion: 'StrParamT'
+	class _MetaParsT:
+		Hostop: 'OPParamT'
+		Helpurl: 'StrParamT'
+		Helpdat: 'OPParamT'
+		Toolkitname: 'StrParamT'
+		Toolkitversion: 'StrParamT'
 
-class CompMetaParsT(_MetaParsT):
-	Optype: 'StrParamT'
-	Opversion: 'StrParamT'
-	Opstatus: 'StrParamT'
+	class _CompMetaParsT(_MetaParsT):
+		Optype: 'StrParamT'
+		Opversion: 'StrParamT'
+		Opstatus: 'StrParamT'
 
-class CategoryMetaParsT(_MetaParsT):
-	Categoryid: 'StrParamT'
+	class _CompMetaCompT(COMP):
+		par: _CompMetaParsT
 
-class ToolkitMetaParsT(_MetaParsT):
-	pass
+	class _CategoryMetaParsT(_MetaParsT):
+		Categoryid: 'StrParamT'
+
+	class _CategoryMetaCompT(COMP):
+		par: _CategoryMetaParsT
+
+	class _ToolkitMetaParsT(_MetaParsT):
+		pass
+
+	class _ToolkitMetaCompT(COMP):
+		par: _ToolkitMetaParsT
 
 class CompMeta:
 	comp: 'Optional[AnyOpT]'
-	compMeta: 'Optional[COMP]'
-	compMetaPar: 'Optional[CompMetaParsT]'
+	compMeta: 'Optional[_CompMetaCompT]'
+	compMetaPar: 'Optional[_CompMetaParsT]'
 
 	def __init__(self, o: 'Union[OP, str, Cell, Par]'):
 		o = op(o)
@@ -35,8 +44,8 @@ class CompMeta:
 			return
 		if _isCompWithMeta(o):
 			self.comp = o
-			self.compMeta = o.op('compMeta')
 			# noinspection PyTypeChecker
+			self.compMeta = o.op('compMeta')
 			self.compMetaPar = self.compMeta.par
 		elif _isCompMeta(o):
 			self.comp = o.par.Hostop.eval()
@@ -117,3 +126,17 @@ def _isCompWithMeta(o: 'OP'):
 
 def _isCompMeta(o: 'OP'):
 	return bool(o) and o.isCOMP and o.name == 'compMeta' and o.par['Hostop'] is not None
+
+class CategoryMeta:
+	pass
+
+class ToolkitMeta:
+	comp: 'Optional[COMP]'
+	metaComp: 'Optional[_ToolkitMetaCompT]'
+	metaCompPar: 'Optional[_ToolkitMetaParsT]'
+
+	def __init__(self, o: 'Union[OP, str, Cell, Par]'):
+		o = op(o)
+		if not o:
+			return
+		raise NotImplementedError()
