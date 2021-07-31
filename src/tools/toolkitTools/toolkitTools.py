@@ -85,10 +85,15 @@ class ToolkitTools(CallbacksExt):
 			versionVal = currentOpVersion
 			if incrementVersion:
 				versionVal = int(versionVal + 1)
+		meta.metaPar.Hostop.readOnly = True
 		meta.opVersion = versionVal
+		meta.metaPar.Optype.readOnly = True
+		meta.metaPar.Opversion.readOnly = True
 		toolkitMeta = self._toolkitMeta()
 		meta.metaPar.Toolkitname = toolkitMeta.metaPar.Toolkitname
 		meta.metaPar.Toolkitversion = toolkitMeta.metaPar.Toolkitversion
+		meta.metaPar.Toolkitname.readOnly = True
+		meta.metaPar.Toolkitversion.readOnly = True
 		self.DoCallback('onUpdateComponentMetadata', {
 			'toolkitTools': self,
 			'comp': comp,
@@ -133,8 +138,8 @@ class ToolkitTools(CallbacksExt):
 		par.val = dat
 		ui.undo.endBlock()
 
-	def getPrimaryCurrentComponent(self):
-		for o in self._getCurrentComponents(primaryOnly=True):
+	def _getPrimaryCurrentComponent(self):
+		for o in self._getCurrentComponents(primaryOnly=True, masterOnly=True):
 			return o
 
 	def _getCurrentComponents(
@@ -161,7 +166,7 @@ class ToolkitTools(CallbacksExt):
 		cs = [c] if c else []
 		for child in comp.selectedChildren:
 			c = self._getComponent(child, checkParents=False)
-			if _shouldExclude(c):
+			if not c or _shouldExclude(c):
 				continue
 			if masterOnly and not self._isMasterComponent(c):
 				continue
@@ -170,6 +175,8 @@ class ToolkitTools(CallbacksExt):
 		return cs
 
 	def _isComponent(self, comp: 'COMP'):
+		if not comp:
+			return False
 		compTags = tdu.split(self._toolkitConfig().par.Componenttags)
 		if compTags:
 			return any(tag in compTags for tag in comp.tags)
@@ -182,4 +189,28 @@ class ToolkitTools(CallbacksExt):
 			return comp
 		if checkParents:
 			return self._getComponent(comp.parent(), checkParents=True)
+
+	def buildCurrentComponentsTable(self, dat: 'scriptDAT'):
+		dat.clear()
+		dat.appendRow([
+			'path',
+			'shortTypeName',
+			'opType',
+			'opVersion',
+			'opStatus',
+		])
+		comps = self._getCurrentComponents(primaryOnly=False, masterOnly=True)
+		for c in comps:
+			meta = CompMeta(c)
+			dat.appendRow([
+				c.path,
+				meta.opTypeShortName,
+				meta.opType,
+				meta.opVersion,
+				meta.opStatus,
+			])
+
+	def SaveCurrentComponent(self, incrementVersion=False, **kwargs):
+		comp = self._getPrimaryCurrentComponent()
+		self.SaveComponent(comp, incrementVersion, **kwargs)
 

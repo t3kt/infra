@@ -143,7 +143,7 @@ class ToolkitMeta:
 		if _isToolkitMeta(o.op('toolkitMeta')):
 			self.comp = o
 			# noinspection PyTypeChecker
-			self.metaComp = o.op('compMeta')
+			self.metaComp = o.op('toolkitMeta')
 			self.metaPar = self.metaComp.par
 		elif _isToolkitMeta(o):
 			self.comp = o.par.Hostop.eval()
