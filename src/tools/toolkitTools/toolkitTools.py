@@ -1,8 +1,8 @@
 import logging
-from typing import Optional, Callable
+from typing import Optional
 
 from infraCommon import focusFirstCustomParameterPage, getActiveEditor
-from infraMeta import CompMeta, ToolkitMeta
+from infraMeta import CompMeta, ToolkitMeta, CompMetaData
 
 # noinspection PyUnreachableCode
 if False:
@@ -15,6 +15,7 @@ if False:
 		Toolkitmeta: OPParamT
 		Categorytags: StrParamT
 		Componenttags: StrParamT
+		Metafilesuffix: StrParamT
 	class _ConfigComp(COMP):
 		par: _ConfigPar
 
@@ -118,9 +119,25 @@ class ToolkitTools(CallbacksExt):
 		focusFirstCustomParameterPage(comp)
 		tox = meta.toxFile
 		comp.save(tox)
+
+		metaSuffix = self._toolkitConfig().par.Metafilesuffix.eval()
+		if metaSuffix:
+			metaFile = tox.replace('.tox', metaSuffix)
+			metaData = self._extractCompMetaData(comp)
+			with open(metaFile, 'w') as f:
+				f.write(metaData.toJson(minify=False))
 		msg = f'Saved TOX {tox} (version: {meta.opVersion}'
 		ui.status = msg
 		_logger.info(msg)
+
+	@staticmethod
+	def _extractCompMetaData(comp: 'COMP'):
+		meta = CompMeta(comp)
+		return CompMetaData(
+			opType=meta.opType,
+			opVersion=meta.opVersion,
+			opStatus=meta.opStatus,
+		)
 
 	def Createcallbacks(self, _=None):
 		par = self.ownerComp.par.Callbackdat
@@ -158,7 +175,12 @@ class ToolkitTools(CallbacksExt):
 			return []
 		if _shouldExclude(comp):
 			return []
-		c = self._getComponent(comp) or self._getComponent(comp.currentChild)
+		c = self._getComponent(comp)
+		if not c:
+			try:
+				c = self._getComponent(comp.currentChild)
+			except:
+				pass
 		if masterOnly and not self._isComponent(c):
 			c = None
 		if c and primaryOnly:

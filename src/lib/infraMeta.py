@@ -1,4 +1,7 @@
+from dataclasses import dataclass
 from typing import Optional, Union
+
+from infraData import DataObjectBase
 
 # noinspection PyUnreachableCode
 if False:
@@ -158,3 +161,9 @@ class ToolkitMeta:
 	@property
 	def toolkitName(self):
 		return self.metaPar.Toolkitname.eval()
+
+@dataclass
+class CompMetaData(DataObjectBase):
+	opType: Optional[str] = None
+	opVersion: Optional[str] = None
+	opStatus: Optional[str] = None
