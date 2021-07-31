@@ -74,3 +74,7 @@ def excludeKeys(d, keys):
 		for key, val in d.items()
 		if key not in keys
 	}
+
+def focusFirstCustomParameterPage(o: 'COMP'):
+	if o and o.customPages:
+		o.par.pageindex = len(o.pages)

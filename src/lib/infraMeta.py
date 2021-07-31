@@ -35,54 +35,54 @@ if False:
 
 class CompMeta:
 	comp: 'Optional[AnyOpT]'
-	compMeta: 'Optional[_CompMetaCompT]'
-	compMetaPar: 'Optional[_CompMetaParsT]'
+	metaComp: 'Optional[_CompMetaCompT]'
+	metaPar: 'Optional[_CompMetaParsT]'
 
 	def __init__(self, o: 'Union[OP, str, Cell, Par]'):
 		o = op(o)
-		if not o:
+		if not o or not o.isCOMP:
 			return
-		if _isCompWithMeta(o):
+		if _isCompMeta(o.op('compMeta')):
 			self.comp = o
 			# noinspection PyTypeChecker
-			self.compMeta = o.op('compMeta')
-			self.compMetaPar = self.compMeta.par
+			self.metaComp = o.op('compMeta')
+			self.metaPar = self.metaComp.par
 		elif _isCompMeta(o):
 			self.comp = o.par.Hostop.eval()
-			self.compMeta = o
 			# noinspection PyTypeChecker
-			self.compMetaPar = self.compMeta.par
+			self.metaComp = o
+			self.metaPar = self.metaComp.par
 		else:
 			self.comp = None
-			self.compMeta = None
-			self.compMetaPar = None
+			self.metaComp = None
+			self.metaPar = None
 
 	def __bool__(self):
 		return bool(self.comp)
 
 	@property
 	def opVersion(self):
-		return str(self.compMetaPar.Opversion)
+		return str(self.metaPar.Opversion)
 
 	@opVersion.setter
 	def opVersion(self, val):
-		self.compMetaPar.Opversion = val if val is not None else ''
+		self.metaPar.Opversion = val if val is not None else ''
 
 	@property
 	def opType(self):
-		return str(self.compMetaPar.Optype)
+		return str(self.metaPar.Optype)
 
 	@opType.setter
 	def opType(self, val):
-		self.compMetaPar.Optype = val or ''
+		self.metaPar.Optype = val or ''
 
 	@property
 	def opStatus(self):
-		return str(self.compMetaPar.Opstatus)
+		return str(self.metaPar.Opstatus)
 
 	@opStatus.setter
 	def opStatus(self, val):
-		self.compMetaPar.Opstatus = val or 'unset'
+		self.metaPar.Opstatus = val or 'unset'
 
 	@property
 	def isBeta(self):
@@ -105,27 +105,28 @@ class CompMeta:
 		return t and t.rsplit('.', 1)[-1]
 
 	@property
+	def toxFile(self) -> 'Optional[str]':
+		return self.comp.par.externaltox.eval() or None
+
+	@property
 	def helpDat(self) -> 'Optional[DAT]':
-		dat = op(self.compMetaPar.Helpdat) or self.comp.op('help')
+		dat = op(self.metaPar.Helpdat) or self.comp.op('help')
 		if dat and dat.isDAT:
 			return dat
 
 	@helpDat.setter
 	def helpDat(self, val: 'Optional[DAT]'):
-		self.compMetaPar.Helpdat = val or ''
+		self.metaPar.Helpdat = val or ''
 
 	@property
 	def helpUrl(self):
-		return str(self.compMetaPar.Helpurl)
-
-def _isCompWithMeta(o: 'OP'):
-	if not o:
-		return False
-	compMeta = o.op('compMeta')
-	return _isCompMeta(compMeta)
+		return str(self.metaPar.Helpurl)
 
 def _isCompMeta(o: 'OP'):
 	return bool(o) and o.isCOMP and o.name == 'compMeta' and o.par['Hostop'] is not None
+
+def _isToolkitMeta(o: 'OP'):
+	return bool(o) and o.isCOMP and o.name == 'toolkitMeta' and o.par['Hostop'] is not None
 
 class CategoryMeta:
 	pass
@@ -133,10 +134,27 @@ class CategoryMeta:
 class ToolkitMeta:
 	comp: 'Optional[COMP]'
 	metaComp: 'Optional[_ToolkitMetaCompT]'
-	metaCompPar: 'Optional[_ToolkitMetaParsT]'
+	metaPar: 'Optional[_ToolkitMetaParsT]'
 
 	def __init__(self, o: 'Union[OP, str, Cell, Par]'):
 		o = op(o)
-		if not o:
+		if not o or not o.isCOMP:
 			return
-		raise NotImplementedError()
+		if _isToolkitMeta(o.op('toolkitMeta')):
+			self.comp = o
+			# noinspection PyTypeChecker
+			self.metaComp = o.op('compMeta')
+			self.metaPar = self.metaComp.par
+		elif _isToolkitMeta(o):
+			self.comp = o.par.Hostop.eval()
+			# noinspection PyTypeChecker
+			self.metaComp = o
+			self.metaPar = self.metaComp.par
+		else:
+			self.comp = None
+			self.metaComp = None
+			self.metaPar = None
+
+	@property
+	def toolkitName(self):
+		return self.metaPar.Toolkitname.eval()
