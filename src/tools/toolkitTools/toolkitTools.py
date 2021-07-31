@@ -1,7 +1,7 @@
 import logging
-from typing import Optional
+from typing import Optional, Callable
 
-from infraCommon import focusFirstCustomParameterPage
+from infraCommon import focusFirstCustomParameterPage, getActiveEditor
 from infraMeta import CompMeta, ToolkitMeta
 
 # noinspection PyUnreachableCode
@@ -35,6 +35,7 @@ _logger = logging.getLogger(__name__)
 class ToolkitTools(CallbacksExt):
 	def __init__(self, ownerComp: 'COMP'):
 		super().__init__(ownerComp)
+		# noinspection PyTypeChecker
 		self.ownerComp = ownerComp  # type: _ToolsComp
 
 	def _toolkitConfig(self) -> 'Optional[_ConfigComp]':
@@ -47,7 +48,7 @@ class ToolkitTools(CallbacksExt):
 	def _toolkitMeta(self):
 		return ToolkitMeta(self._toolkitRoot())
 
-	def isMasterComponent(self, comp: 'Optional[COMP]'):
+	def _isMasterComponent(self, comp: 'Optional[COMP]'):
 		if not comp or not comp.isCOMP:
 			return False
 		toolkit = self._toolkitRoot()
@@ -64,7 +65,7 @@ class ToolkitTools(CallbacksExt):
 		meta = CompMeta(comp)
 		if not meta:
 			raise Exception(f'Invalid component: {comp}')
-		if not self.isMasterComponent(comp):
+		if not self._isMasterComponent(comp):
 			raise Exception(f'Component is not master: {comp}')
 		return meta
 
@@ -131,3 +132,54 @@ class ToolkitTools(CallbacksExt):
 		dat.viewer = True
 		par.val = dat
 		ui.undo.endBlock()
+
+	def getPrimaryCurrentComponent(self):
+		for o in self._getCurrentComponents(primaryOnly=True):
+			return o
+
+	def _getCurrentComponents(
+			self,
+			primaryOnly=False,
+			masterOnly=False,
+	):
+		def _shouldExclude(o: 'COMP'):
+			return o is self.ownerComp or o.path.startswith(self.ownerComp.path + '/')
+
+		pane = getActiveEditor()
+		if not pane:
+			return []
+		comp = pane.owner
+		if not comp:
+			return []
+		if _shouldExclude(comp):
+			return []
+		c = self._getComponent(comp) or self._getComponent(comp.currentChild)
+		if masterOnly and not self._isComponent(c):
+			c = None
+		if c and primaryOnly:
+			return [c]
+		cs = [c] if c else []
+		for child in comp.selectedChildren:
+			c = self._getComponent(child, checkParents=False)
+			if _shouldExclude(c):
+				continue
+			if masterOnly and not self._isMasterComponent(c):
+				continue
+			if c and c not in cs:
+				cs.append(c)
+		return cs
+
+	def _isComponent(self, comp: 'COMP'):
+		compTags = tdu.split(self._toolkitConfig().par.Componenttags)
+		if compTags:
+			return any(tag in compTags for tag in comp.tags)
+		return bool(CompMeta(comp))
+
+	def _getComponent(self, comp: 'COMP', checkParents=True):
+		if not comp or comp is root:
+			return None
+		if self._isComponent(comp):
+			return comp
+		if checkParents:
+			return self._getComponent(comp.parent(), checkParents=True)
+
