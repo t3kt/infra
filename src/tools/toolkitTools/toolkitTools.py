@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from infraCommon import focusFirstCustomParameterPage, getActiveEditor
-from infraMeta import CompMeta, ToolkitMeta, CompMetaData
+from infraMeta import CompMeta, ToolkitMeta, CompMetaData, CategoryMeta
 
 # noinspection PyUnreachableCode
 if False:
@@ -164,21 +164,16 @@ class ToolkitTools(CallbacksExt):
 			primaryOnly=False,
 			masterOnly=False,
 	):
-		def _shouldExclude(o: 'COMP'):
-			return o is self.ownerComp or o.path.startswith(self.ownerComp.path + '/')
-
 		pane = getActiveEditor()
-		if not pane:
-			return []
-		comp = pane.owner
+		comp = pane.owner if pane else None
 		if not comp:
 			return []
-		if _shouldExclude(comp):
+		if not self._couldBeToolkitSubComp(comp):
 			return []
-		c = self._getComponent(comp)
+		c = self._getComponent(comp, checkParents=True)
 		if not c:
 			try:
-				c = self._getComponent(comp.currentChild)
+				c = self._getComponent(comp.currentChild, checkParents=True)
 			except:
 				pass
 		if masterOnly and not self._isComponent(c):
@@ -188,13 +183,27 @@ class ToolkitTools(CallbacksExt):
 		cs = [c] if c else []
 		for child in comp.selectedChildren:
 			c = self._getComponent(child, checkParents=False)
-			if not c or _shouldExclude(c):
+			if not c or not self._couldBeToolkitSubComp(c):
 				continue
 			if masterOnly and not self._isMasterComponent(c):
 				continue
 			if c and c not in cs:
 				cs.append(c)
 		return cs
+
+	def _couldBeToolkitSubComp(self, comp: 'COMP'):
+		if not comp:
+			return False
+		if comp.path.startswith(self.ownerComp.path + '/'):
+			return False
+		return comp.path.startswith(self._toolkitRoot().path + '/')
+
+	def _getCurrentCategory(self):
+		pane = getActiveEditor()
+		comp = pane.owner if pane else None
+		if not comp or not self._couldBeToolkitSubComp(comp):
+			return None
+		return self._getCategory(comp, checkParents=True)
 
 	def _isComponent(self, comp: 'COMP'):
 		if not comp:
@@ -204,13 +213,29 @@ class ToolkitTools(CallbacksExt):
 			return any(tag in compTags for tag in comp.tags)
 		return bool(CompMeta(comp))
 
-	def _getComponent(self, comp: 'COMP', checkParents=True):
+	def _isCategory(self, comp: 'COMP'):
+		if not comp:
+			return
+		catTags = tdu.split(self._toolkitConfig().par.Categorytags)
+		if catTags:
+			return any(tag in catTags for tag in comp.tags)
+		return bool(CategoryMeta(comp))
+
+	def _getComponent(self, comp: 'COMP', checkParents: bool):
 		if not comp or comp is root:
 			return None
 		if self._isComponent(comp):
 			return comp
 		if checkParents:
 			return self._getComponent(comp.parent(), checkParents=True)
+
+	def _getCategory(self, comp: 'COMP', checkParents: bool):
+		if not comp or comp is root:
+			return None
+		if self._isCategory(comp):
+			return comp
+		if checkParents:
+			return self._getCategory(comp.parent(), checkParents=True)
 
 	def buildCurrentComponentsTable(self, dat: 'scriptDAT'):
 		dat.clear()
@@ -235,4 +260,3 @@ class ToolkitTools(CallbacksExt):
 	def SaveCurrentComponent(self, incrementVersion=False, **kwargs):
 		comp = self._getPrimaryCurrentComponent()
 		self.SaveComponent(comp, incrementVersion, **kwargs)
-

@@ -131,8 +131,40 @@ def _isCompMeta(o: 'OP'):
 def _isToolkitMeta(o: 'OP'):
 	return bool(o) and o.isCOMP and o.name == 'toolkitMeta' and o.par['Hostop'] is not None
 
+def _isCategoryMeta(o: 'OP'):
+	return bool(o) and o.isCOMP and o.name == 'categoryMeta' and o.par['Hostop'] is not None
+
 class CategoryMeta:
-	pass
+	comp: 'Optional[COMP]'
+	metaComp: 'Optional[_CategoryMetaCompT]'
+	metaPar: 'Optional[_CategoryMetaParsT]'
+
+	def __init__(self, o: 'Union[OP, str, Cell, Par]'):
+		o = op(o)
+		if not o or not o.isCOMP:
+			return
+		if _isCategoryMeta(o.op('categoryMeta')):
+			self.comp = o
+			# noinspection PyTypeChecker
+			self.metaComp = o.op('categoryMeta')
+			self.metaPar = self.metaComp.par
+		elif _isCategoryMeta(o):
+			self.comp = o.par.Hostop.eval()
+			# noinspection PyTypeChecker
+			self.metaComp = o
+			self.metaPar = self.metaComp.par
+		else:
+			self.comp = None
+			self.metaComp = None
+			self.metaPar = None
+
+	@property
+	def categoryId(self):
+		return str(self.metaPar.Categoryid)
+
+	@categoryId.setter
+	def categoryId(self, val):
+		self.metaPar.Categoryid = val
 
 class ToolkitMeta:
 	comp: 'Optional[COMP]'
