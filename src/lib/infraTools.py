@@ -1,11 +1,9 @@
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Tuple, Union
 
 # noinspection PyUnreachableCode
 if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
-
-
 
 class Tag:
 	"""

@@ -13,8 +13,8 @@ if False:
 		Hostop: 'OPParamT'
 		Helpurl: 'StrParamT'
 		Helpdat: 'OPParamT'
-		Toolkitname: 'StrParamT'
-		Toolkitversion: 'StrParamT'
+		Libraryname: 'StrParamT'
+		Libraryversion: 'StrParamT'
 
 	class _CompMetaParsT(_MetaParsT):
 		Optype: 'StrParamT'
@@ -24,19 +24,19 @@ if False:
 	class _CompMetaCompT(COMP):
 		par: _CompMetaParsT
 
-	class _CategoryMetaParsT(_MetaParsT):
-		Categoryid: 'StrParamT'
+	class _PackageMetaParsT(_MetaParsT):
+		Packageid: 'StrParamT'
 
-	class _CategoryMetaCompT(COMP):
-		par: _CategoryMetaParsT
+	class _PackageMetaCompT(COMP):
+		par: _PackageMetaParsT
 
-	class _ToolkitMetaParsT(_MetaParsT):
+	class _LibraryMetaParsT(_MetaParsT):
 		pass
 
-	class _ToolkitMetaCompT(COMP):
-		par: _ToolkitMetaParsT
+	class _LibraryMetaCompT(COMP):
+		par: _LibraryMetaParsT
 
-class CompMeta:
+class CompInfo:
 	comp: 'Optional[AnyOpT]'
 	metaComp: 'Optional[_CompMetaCompT]'
 	metaPar: 'Optional[_CompMetaParsT]'
@@ -45,10 +45,10 @@ class CompMeta:
 		o = op(o)
 		if not o or not o.isCOMP:
 			return
-		if _isCompMeta(o.op('compMeta')):
+		if _isCompMeta(o.op('componentMeta')):
 			self.comp = o
 			# noinspection PyTypeChecker
-			self.metaComp = o.op('compMeta')
+			self.metaComp = o.op('componentMeta')
 			self.metaPar = self.metaComp.par
 		elif _isCompMeta(o):
 			self.comp = o.par.Hostop.eval()
@@ -88,18 +88,6 @@ class CompMeta:
 		self.metaPar.Opstatus = val or 'unset'
 
 	@property
-	def isBeta(self):
-		return self.opStatus == 'beta'
-
-	@property
-	def isAlpha(self):
-		return self.opStatus == 'alpha'
-
-	@property
-	def isDeprecated(self):
-		return self.opStatus == 'deprecated'
-
-	@property
 	def opTypeShortName(self):
 		"""
 		Short form of the name of the COMP type (not the COMP instance).
@@ -126,29 +114,29 @@ class CompMeta:
 		return str(self.metaPar.Helpurl)
 
 def _isCompMeta(o: 'OP'):
-	return bool(o) and o.isCOMP and o.name == 'compMeta' and o.par['Hostop'] is not None
+	return bool(o) and o.isCOMP and o.name == 'componentMeta' and o.par['Hostop'] is not None
 
-def _isToolkitMeta(o: 'OP'):
-	return bool(o) and o.isCOMP and o.name == 'toolkitMeta' and o.par['Hostop'] is not None
+def _isLibraryMeta(o: 'OP'):
+	return bool(o) and o.isCOMP and o.name == 'libraryMeta' and o.par['Hostop'] is not None
 
-def _isCategoryMeta(o: 'OP'):
-	return bool(o) and o.isCOMP and o.name == 'categoryMeta' and o.par['Hostop'] is not None
+def _isPackageMeta(o: 'OP'):
+	return bool(o) and o.isCOMP and o.name == 'packageMeta' and o.par['Hostop'] is not None
 
-class CategoryMeta:
+class PackageInfo:
 	comp: 'Optional[COMP]'
-	metaComp: 'Optional[_CategoryMetaCompT]'
-	metaPar: 'Optional[_CategoryMetaParsT]'
+	metaComp: 'Optional[_PackageMetaCompT]'
+	metaPar: 'Optional[_PackageMetaParsT]'
 
 	def __init__(self, o: 'Union[OP, str, Cell, Par]'):
 		o = op(o)
 		if not o or not o.isCOMP:
 			return
-		if _isCategoryMeta(o.op('categoryMeta')):
+		if _isPackageMeta(o.op('packageMeta')):
 			self.comp = o
 			# noinspection PyTypeChecker
-			self.metaComp = o.op('categoryMeta')
+			self.metaComp = o.op('packageMeta')
 			self.metaPar = self.metaComp.par
-		elif _isCategoryMeta(o):
+		elif _isPackageMeta(o):
 			self.comp = o.par.Hostop.eval()
 			# noinspection PyTypeChecker
 			self.metaComp = o
@@ -158,29 +146,32 @@ class CategoryMeta:
 			self.metaComp = None
 			self.metaPar = None
 
+	def __bool__(self):
+		return bool(self.comp)
+
 	@property
-	def categoryId(self):
-		return str(self.metaPar.Categoryid)
+	def packageId(self):
+		return str(self.metaPar.Packageid)
 
-	@categoryId.setter
-	def categoryId(self, val):
-		self.metaPar.Categoryid = val
+	@packageId.setter
+	def packageId(self, val: str):
+		self.metaPar.Packageid = val
 
-class ToolkitMeta:
+class LibraryInfo:
 	comp: 'Optional[COMP]'
-	metaComp: 'Optional[_ToolkitMetaCompT]'
-	metaPar: 'Optional[_ToolkitMetaParsT]'
+	metaComp: 'Optional[_LibraryMetaCompT]'
+	metaPar: 'Optional[_LibraryMetaParsT]'
 
 	def __init__(self, o: 'Union[OP, str, Cell, Par]'):
 		o = op(o)
 		if not o or not o.isCOMP:
 			return
-		if _isToolkitMeta(o.op('toolkitMeta')):
+		if _isLibraryMeta(o.op('libraryMeta')):
 			self.comp = o
 			# noinspection PyTypeChecker
-			self.metaComp = o.op('toolkitMeta')
+			self.metaComp = o.op('libraryMeta')
 			self.metaPar = self.metaComp.par
-		elif _isToolkitMeta(o):
+		elif _isLibraryMeta(o):
 			self.comp = o.par.Hostop.eval()
 			# noinspection PyTypeChecker
 			self.metaComp = o
@@ -190,9 +181,12 @@ class ToolkitMeta:
 			self.metaComp = None
 			self.metaPar = None
 
+	def __bool__(self):
+		return bool(self.comp)
+
 	@property
-	def toolkitName(self):
-		return self.metaPar.Toolkitname.eval()
+	def libraryName(self):
+		return str(self.metaPar.Libraryname)
 
 @dataclass
 class CompMetaData(DataObjectBase):
