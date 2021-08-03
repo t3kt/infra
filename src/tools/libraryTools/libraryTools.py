@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Union
 
 from infraCommon import focusFirstCustomParameterPage, getActiveEditor
-from infraMeta import LibraryInfo, CompInfo, CompMetaData, PackageInfo
+from infraMeta import LibraryInfo, CompInfo, CompMetaData, PackageInfo, LibraryConfig
 
 # noinspection PyUnreachableCode
 if False:
@@ -36,18 +36,14 @@ class LibraryTools(CallbacksExt):
 		# noinspection PyTypeChecker
 		self.ownerComp = ownerComp  # type: _ToolsComp
 
-	def _libraryConfig(self) -> 'Optional[_ConfigComp]':
-		return self.ownerComp.par.Libraryconfig.eval()
+	def _libraryConfig(self) -> LibraryConfig:
+		return LibraryConfig(self.ownerComp.par.Libraryconfig.eval())
 
 	def _libraryRoot(self) -> 'Optional[COMP]':
-		config = self._libraryConfig()
-		return config and config.par.Libraryroot.eval()
+		return self._libraryConfig().libraryRoot
 
 	def _libraryPackagesRoot(self) -> 'Optional[COMP]':
-		config = self._libraryConfig()
-		if not config:
-			return None
-		return config.par.Packageroot.eval() or config.par.Libraryroot.eval()
+		return self._libraryConfig().packageRoot
 
 	def _libraryInfo(self):
 		return LibraryInfo(self._libraryRoot())
@@ -131,7 +127,7 @@ class LibraryTools(CallbacksExt):
 		tox = info.toxFile
 		comp.save(tox)
 
-		metaSuffix = self._libraryConfig().par.Metafilesuffix.eval()
+		metaSuffix = self._libraryConfig().configPar.Metafilesuffix.eval()
 		if metaSuffix:
 			metaFile = tox.replace('.tox', metaSuffix)
 			metaData = self._extractCompMetaData(comp)
@@ -246,7 +242,7 @@ class LibraryTools(CallbacksExt):
 	def _isComponent(self, comp: 'COMP'):
 		if not comp:
 			return False
-		tags = tdu.split(self._libraryConfig().par.Componenttags)
+		tags = self._libraryConfig().componentTags
 		if tags:
 			return any(tag in tags for tag in comp.tags)
 		return bool(CompInfo(comp))
@@ -254,7 +250,7 @@ class LibraryTools(CallbacksExt):
 	def _isPackage(self, comp: 'COMP'):
 		if not comp:
 			return
-		tags = tdu.split(self._libraryConfig().par.Packagetags)
+		tags = self._libraryConfig().packageTags
 		if tags:
 			return any(tag in tags for tag in comp.tags)
 		return bool(PackageInfo(comp))

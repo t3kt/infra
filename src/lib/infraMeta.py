@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from infraData import DataObjectBase
 
@@ -35,6 +35,17 @@ if False:
 
 	class _LibraryMetaCompT(COMP):
 		par: _LibraryMetaParsT
+
+	class _LibraryConfigParsT:
+		Libraryroot: OPParamT
+		Librarymeta: OPParamT
+		Packageroot: OPParamT
+		Packagetags: StrParamT
+		Componenttags: StrParamT
+		Metafilesuffix: StrParamT
+
+	class _LibraryConfigCompT(COMP):
+		par: _LibraryConfigParsT
 
 class CompInfo:
 	comp: 'Optional[AnyOpT]'
@@ -187,6 +198,39 @@ class LibraryInfo:
 	@property
 	def libraryName(self):
 		return str(self.metaPar.Libraryname)
+
+class LibraryConfig:
+	configComp: 'Optional[_LibraryConfigCompT]'
+	configPar: 'Optional[_LibraryConfigParsT]'
+	libraryRoot: 'Optional[COMP]'
+
+	def __init__(self, configComp: 'COMP'):
+		configComp = op(configComp)
+		if not configComp or not configComp.isCOMP:
+			return
+		if configComp.name != 'libraryConfig' or configComp.par['Libraryroot'] is None:
+			return
+		# noinspection PyTypeChecker
+		self.configComp = configComp
+		self.configPar = self.configComp.par
+		self.libraryRoot = self.configComp.par.Libraryroot.eval()
+
+	def __bool__(self):
+		return bool(self.configComp and self.libraryRoot)
+
+	@property
+	def packageRoot(self) -> 'Optional[COMP]':
+		if not self:
+			return None
+		return self.configPar.Packageroot.eval() or self.libraryRoot
+
+	@property
+	def componentTags(self) -> 'List[str]':
+		return tdu.split(self.configPar.Componenttags)
+
+	@property
+	def packageTags(self) -> 'List[str]':
+		return tdu.split(self.configPar.Packagetags)
 
 @dataclass
 class CompMetaData(DataObjectBase):
