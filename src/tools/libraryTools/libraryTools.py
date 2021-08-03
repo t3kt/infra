@@ -1,4 +1,5 @@
 import logging
+from typing import Optional, Union
 
 from infraCommon import focusFirstCustomParameterPage, getActiveEditor
 from infraMeta import LibraryInfo, CompInfo, CompMetaData, PackageInfo
@@ -53,8 +54,8 @@ class LibraryTools(CallbacksExt):
 		master = comp.par.clone.eval()
 		return bool(master) and master is comp
 
-	def _generateOpType(self, compInfo: CompInfo):
-		path = self._libraryRoot().relativePath(compInfo.comp).strip('./')
+	def _generateOpId(self, comp: 'COMP'):
+		path = self._libraryRoot().relativePath(comp).strip('./')
 		return self._libraryInfo().libraryName + '.' + path.replace('/', '.')
 
 	def _validateAndGetCompInfo(self, comp: 'COMP'):
@@ -65,6 +66,13 @@ class LibraryTools(CallbacksExt):
 			raise Exception(f'Component is not master: {comp}')
 		return info
 
+	@staticmethod
+	def _validateAndGetPackageInfo(comp: 'COMP'):
+		info = PackageInfo(comp)
+		if not info:
+			raise Exception(f'Invalid package: {comp}')
+		return info
+
 	def UpdateComponentMetadata(
 			self,
 			comp: 'COMP',
@@ -72,7 +80,7 @@ class LibraryTools(CallbacksExt):
 			**kwargs):
 		info = self._validateAndGetCompInfo(comp)
 		currentOpType = info.opType
-		newOpType = self._generateOpType(info)
+		newOpType = self._generateOpId(comp)
 		currentOpVersion = info.opVersion
 		info.opType = newOpType
 		if not currentOpVersion or not currentOpType or currentOpType != newOpType:
@@ -85,29 +93,30 @@ class LibraryTools(CallbacksExt):
 		info.opVersion = versionVal
 		info.metaPar.Optype.readOnly = True
 		info.metaPar.Opversion.readOnly = True
+		self._updateMetaLibraryProperties(info)
+		self.DoCallback('onUpdateComponentMetadata', {
+			'libraryTools': self,
+			'comp': comp,
+			'params': kwargs,
+		})
+
+	def _updateMetaLibraryProperties(self, info: Union[CompInfo, PackageInfo]):
 		libraryInfo = self._libraryInfo()
 		info.metaPar.Libraryname = libraryInfo.metaPar.Libraryname
 		info.metaPar.Libraryversion = libraryInfo.metaPar.Libraryversion
 		info.metaPar.Libraryname.readOnly = True
 		info.metaPar.Libraryversion.readOnly = True
-		self.DoCallback('onUpdateComponentMetadata', {
-			'libraryTools': self,
-			'comp': comp,
-			'compInfo': info,
-			'params': kwargs,
-		})
 
 	def SaveComponent(
 			self,
 			comp: 'COMP',
 			incrementVersion=False,
 			**kwargs):
-		info = self._validateAndGetCompInfo(comp)
 		self.UpdateComponentMetadata(comp, incrementVersion, **kwargs)
+		info = self._validateAndGetCompInfo(comp)
 		self.DoCallback('onSaveComponent', {
 			'libraryTools': self,
 			'comp': comp,
-			'compInfo': info,
 			'params': kwargs,
 		})
 		# TODO: Docs
@@ -125,6 +134,21 @@ class LibraryTools(CallbacksExt):
 		ui.status = msg
 		_logger.info(msg)
 
+	def SavePackage(self, comp: 'COMP', **kwargs):
+		self.UpdatePackageMetadata(comp, **kwargs)
+		info = self._validateAndGetPackageInfo(comp)
+		self.DoCallback('onSavePackage', {
+			'libraryTools': self,
+			'comp': comp,
+			'params': kwargs,
+		})
+		# TODO: Docs
+		tox = comp.par.externaltox.eval()
+		comp.save(tox)
+		msg = f'Saved Package {info.packageId} to {tox}'
+		ui.status = msg
+		_logger.info(msg)
+
 	@staticmethod
 	def _extractCompMetaData(comp: 'COMP'):
 		info = CompInfo(comp)
@@ -133,6 +157,18 @@ class LibraryTools(CallbacksExt):
 			opVersion=info.opVersion,
 			opStatus=info.opStatus,
 		)
+
+	def UpdatePackageMetadata(self, comp: 'COMP', **kwargs):
+		info = self._validateAndGetPackageInfo(comp)
+		info.packageId = self._generateOpId(comp)
+		info.metaPar.Hostop.readOnly = True
+		info.metaPar.Packageid.readOnly = True
+		self._updateMetaLibraryProperties(info)
+		self.DoCallback('onUpdatePackageMetadata', {
+			'libraryTools': self,
+			'comp': comp,
+			'params': kwargs,
+		})
 
 	def Createcallbacks(self, _=None):
 		par = self.ownerComp.par.Callbackdat
@@ -232,7 +268,7 @@ class LibraryTools(CallbacksExt):
 		if checkParents:
 			return self._getPackage(comp.parent(), checkParents=True)
 
-	def buildCurrentComponentsTable(self, dat: 'scriptDAT'):
+	def buildCurrentComponentTable(self, dat: 'scriptDAT'):
 		dat.clear()
 		dat.appendRow([
 			'path',
@@ -254,7 +290,26 @@ class LibraryTools(CallbacksExt):
 				info.opStatus,
 			])
 
+	def buildCurrentPackageTable(self, dat: 'scriptDAT'):
+		dat.clear()
+		dat.appendRow([
+			'path',
+			'packageId',
+		])
+		package = self._getCurrentPackage()
+		if package:
+			info = PackageInfo(package)
+			if info:
+				dat.appendRow([
+					package.path,
+					info.packageId,
+				])
+
 	def SaveCurrentComponent(self, incrementVersion=False, **kwargs):
 		comp = self._getPrimaryCurrentComponent()
 		self.SaveComponent(comp, incrementVersion, **kwargs)
+
+	def SaveCurrentPackage(self, **kwargs):
+		comp = self._getCurrentPackage()
+		self.SavePackage(comp, **kwargs)
 
