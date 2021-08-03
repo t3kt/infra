@@ -13,6 +13,7 @@ if False:
 	class _ConfigPar:
 		Libraryroot: OPParamT
 		Librarymeta: OPParamT
+		Packageroot: OPParamT
 		Packagetags: StrParamT
 		Componenttags: StrParamT
 		Metafilesuffix: StrParamT
@@ -42,20 +43,26 @@ class LibraryTools(CallbacksExt):
 		config = self._libraryConfig()
 		return config and config.par.Libraryroot.eval()
 
+	def _libraryPackagesRoot(self) -> 'Optional[COMP]':
+		config = self._libraryConfig()
+		if not config:
+			return None
+		return config.par.Packageroot.eval() or config.par.Libraryroot.eval()
+
 	def _libraryInfo(self):
 		return LibraryInfo(self._libraryRoot())
 
 	def _isMasterComponent(self, comp: 'Optional[COMP]'):
 		if not comp or not comp.isCOMP:
 			return False
-		library = self._libraryRoot()
-		if not library or not comp.path.startswith(library.path + '/'):
+		packageRoot = self._libraryPackagesRoot()
+		if not packageRoot or not comp.path.startswith(packageRoot.path + '/'):
 			return False
 		master = comp.par.clone.eval()
 		return bool(master) and master is comp
 
 	def _generateOpId(self, comp: 'COMP'):
-		path = self._libraryRoot().relativePath(comp).strip('./')
+		path = self._libraryPackagesRoot().relativePath(comp).strip('./')
 		return self._libraryInfo().libraryName + '.' + path.replace('/', '.')
 
 	def _validateAndGetCompInfo(self, comp: 'COMP'):
@@ -223,11 +230,11 @@ class LibraryTools(CallbacksExt):
 		return cs
 
 	def _couldBeLibrarySubComp(self, comp: 'COMP'):
-		if not comp or not self._libraryRoot():
+		if not comp or not self._libraryPackagesRoot():
 			return False
 		if comp.path.startswith(self.ownerComp.path + '/'):
 			return False
-		return comp.path.startswith(self._libraryRoot().path + '/')
+		return comp.path.startswith(self._libraryPackagesRoot().path + '/')
 
 	def _getCurrentPackage(self):
 		pane = getActiveEditor()
