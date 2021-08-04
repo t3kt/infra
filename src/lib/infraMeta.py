@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Union, List
 
+from infraCommon import mergeDicts
 from infraData import DataObjectBase
 
 # noinspection PyUnreachableCode
@@ -8,6 +9,7 @@ if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
 	from _typeAliases import *
+	from TDCallbacksExt import CallbacksExt
 
 	class _MetaParsT:
 		Hostop: 'OPParamT'
@@ -199,12 +201,18 @@ class LibraryInfo:
 	def libraryName(self):
 		return str(self.metaPar.Libraryname)
 
-class LibraryConfig:
+class LibraryContext:
 	configComp: 'Optional[_LibraryConfigCompT]'
 	configPar: 'Optional[_LibraryConfigParsT]'
 	libraryRoot: 'Optional[COMP]'
+	libraryInfo: 'LibraryInfo'
+	callbacks: 'Optional[CallbacksExt]'
 
-	def __init__(self, configComp: 'COMP'):
+	def __init__(
+			self,
+			configComp: 'COMP',
+			callbacks: 'Optional[CallbacksExt]' = None,
+	):
 		configComp = op(configComp)
 		if not configComp or not configComp.isCOMP:
 			return
@@ -214,8 +222,11 @@ class LibraryConfig:
 		self.configComp = configComp
 		self.configPar = self.configComp.par
 		self.libraryRoot = self.configComp.par.Libraryroot.eval()
+		self.libraryInfo = LibraryInfo(self.libraryRoot)
+		self.callbacks = callbacks
 
-	def __bool__(self):
+	@property
+	def valid(self):
 		return bool(self.configComp and self.libraryRoot)
 
 	@property
@@ -231,6 +242,78 @@ class LibraryConfig:
 	@property
 	def packageTags(self) -> 'List[str]':
 		return tdu.split(self.configPar.Packagetags)
+
+	@property
+	def libraryName(self):
+		return self.libraryInfo.libraryName
+
+	@property
+	def libraryVersion(self):
+		return str(self.libraryInfo.metaPar.Libraryversion)
+
+	def _doCallback(self, name: str, info: dict):
+		if not self.callbacks:
+			return
+		info = mergeDicts({
+			'libraryContext': self,
+		}, info)
+		self.callbacks.DoCallback(name, info)
+
+	def isPackage(self, comp: 'COMP'):
+		if not comp:
+			return False
+		tags = self.packageTags
+		if tags and not any(t in tags for t in comp.tags):
+			return False
+		return bool(PackageInfo(comp))
+
+	def isComponent(self, comp: 'COMP', checkMaster: bool = False):
+		if not comp:
+			return False
+		if checkMaster:
+			master = comp.par.clone.eval()
+			if master is not comp:
+				return False
+		tags = self.componentTags
+		if tags and not any(t in tags for t in comp.tags):
+			return False
+		return bool(CompInfo(comp))
+
+	def getPackage(self, comp: 'COMP', checkParents: bool) -> 'Optional[COMP]':
+		if not comp or comp is root:
+			return None
+		if self.isPackage(comp):
+			return comp
+		if checkParents:
+			return self.getPackage(comp.parent(), checkParents=True)
+
+	def getComponent(self, comp: 'COMP', checkParents: bool) -> 'Optional[COMP]':
+		if not comp or comp is root:
+			return None
+		if self.isComponent(comp):
+			return comp
+		if checkParents:
+			return self.getComponent(comp.parent(), checkParents=True)
+
+	def isWithinPackageRoot(self, comp: 'COMP'):
+		if not comp:
+			return False
+		packageRoot = self.packageRoot
+		return comp.path.startswith(packageRoot.path + '/')
+
+	def validateAndGetPackageInfo(self, comp: 'COMP') -> PackageInfo:
+		if not self.isPackage(comp):
+			raise Exception(f'Invalid package: {comp}')
+		return PackageInfo(comp)
+
+	def validateAndGetCompInfo(self, comp: 'COMP') -> CompInfo:
+		if not self.isComponent(comp, checkMaster=True):
+			raise Exception(f'Invalid component: {comp}')
+		return CompInfo(comp)
+
+	def generateOpId(self, comp: 'COMP'):
+		path = self.packageRoot.relativePath(comp).strip('./')
+		return self.libraryInfo.libraryName + '.' + path.replace('/', '.')
 
 @dataclass
 class CompMetaData(DataObjectBase):

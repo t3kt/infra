@@ -1,8 +1,8 @@
 import logging
-from typing import Optional, Union
+from typing import Union
 
 from infraCommon import focusFirstCustomParameterPage, getActiveEditor
-from infraMeta import LibraryInfo, CompInfo, CompMetaData, PackageInfo, LibraryConfig
+from infraMeta import CompInfo, CompMetaData, PackageInfo, LibraryContext
 
 # noinspection PyUnreachableCode
 if False:
@@ -36,54 +36,18 @@ class LibraryTools(CallbacksExt):
 		# noinspection PyTypeChecker
 		self.ownerComp = ownerComp  # type: _ToolsComp
 
-	def _libraryConfig(self) -> LibraryConfig:
-		return LibraryConfig(self.ownerComp.par.Libraryconfig.eval())
-
-	def _libraryRoot(self) -> 'Optional[COMP]':
-		return self._libraryConfig().libraryRoot
-
-	def _libraryPackagesRoot(self) -> 'Optional[COMP]':
-		return self._libraryConfig().packageRoot
-
-	def _libraryInfo(self):
-		return LibraryInfo(self._libraryRoot())
-
-	def _isMasterComponent(self, comp: 'Optional[COMP]'):
-		if not comp or not comp.isCOMP:
-			return False
-		packageRoot = self._libraryPackagesRoot()
-		if not packageRoot or not comp.path.startswith(packageRoot.path + '/'):
-			return False
-		master = comp.par.clone.eval()
-		return bool(master) and master is comp
-
-	def _generateOpId(self, comp: 'COMP'):
-		path = self._libraryPackagesRoot().relativePath(comp).strip('./')
-		return self._libraryInfo().libraryName + '.' + path.replace('/', '.')
-
-	def _validateAndGetCompInfo(self, comp: 'COMP'):
-		info = CompInfo(comp)
-		if not info:
-			raise Exception(f'Invalid component: {comp}')
-		if not self._isMasterComponent(comp):
-			raise Exception(f'Component is not master: {comp}')
-		return info
-
-	@staticmethod
-	def _validateAndGetPackageInfo(comp: 'COMP'):
-		info = PackageInfo(comp)
-		if not info:
-			raise Exception(f'Invalid package: {comp}')
-		return info
+	def _libraryContext(self):
+		return LibraryContext(self.ownerComp.par.Libraryconfig.eval(), callbacks=self)
 
 	def UpdateComponentMetadata(
 			self,
 			comp: 'COMP',
 			incrementVersion=False,
 			**kwargs):
-		info = self._validateAndGetCompInfo(comp)
+		context = self._libraryContext()
+		info = context.validateAndGetCompInfo(comp)
 		currentOpType = info.opType
-		newOpType = self._generateOpId(comp)
+		newOpType = context.generateOpId(comp)
 		currentOpVersion = info.opVersion
 		info.opType = newOpType
 		if not currentOpVersion or not currentOpType or currentOpType != newOpType:
@@ -104,9 +68,9 @@ class LibraryTools(CallbacksExt):
 		})
 
 	def _updateMetaLibraryProperties(self, info: Union[CompInfo, PackageInfo]):
-		libraryInfo = self._libraryInfo()
-		info.metaPar.Libraryname = libraryInfo.metaPar.Libraryname
-		info.metaPar.Libraryversion = libraryInfo.metaPar.Libraryversion
+		context = self._libraryContext()
+		info.metaPar.Libraryname = context.libraryName
+		info.metaPar.Libraryversion = context.libraryVersion
 		info.metaPar.Libraryname.readOnly = True
 		info.metaPar.Libraryversion.readOnly = True
 
@@ -115,8 +79,9 @@ class LibraryTools(CallbacksExt):
 			comp: 'COMP',
 			incrementVersion=False,
 			**kwargs):
+		context = self._libraryContext()
 		self.UpdateComponentMetadata(comp, incrementVersion, **kwargs)
-		info = self._validateAndGetCompInfo(comp)
+		info = context.validateAndGetCompInfo(comp)
 		self.DoCallback('onSaveComponent', {
 			'libraryTools': self,
 			'comp': comp,
@@ -127,7 +92,7 @@ class LibraryTools(CallbacksExt):
 		tox = info.toxFile
 		comp.save(tox)
 
-		metaSuffix = self._libraryConfig().configPar.Metafilesuffix.eval()
+		metaSuffix = context.configPar.Metafilesuffix.eval()
 		if metaSuffix:
 			metaFile = tox.replace('.tox', metaSuffix)
 			metaData = self._extractCompMetaData(comp)
@@ -139,7 +104,7 @@ class LibraryTools(CallbacksExt):
 
 	def SavePackage(self, comp: 'COMP', **kwargs):
 		self.UpdatePackageMetadata(comp, **kwargs)
-		info = self._validateAndGetPackageInfo(comp)
+		info = self._libraryContext().validateAndGetPackageInfo(comp)
 		self.DoCallback('onSavePackage', {
 			'libraryTools': self,
 			'comp': comp,
@@ -162,8 +127,9 @@ class LibraryTools(CallbacksExt):
 		)
 
 	def UpdatePackageMetadata(self, comp: 'COMP', **kwargs):
-		info = self._validateAndGetPackageInfo(comp)
-		info.packageId = self._generateOpId(comp)
+		context = self._libraryContext()
+		info = context.validateAndGetPackageInfo(comp)
+		info.packageId = context.generateOpId(comp)
 		info.metaPar.Hostop.readOnly = True
 		info.metaPar.Packageid.readOnly = True
 		self._updateMetaLibraryProperties(info)
@@ -204,72 +170,40 @@ class LibraryTools(CallbacksExt):
 			return []
 		if not self._couldBeLibrarySubComp(comp):
 			return []
-		c = self._getComponent(comp, checkParents=True)
+		c = self._libraryContext().getComponent(comp, checkParents=True)
 		if not c:
 			try:
-				c = self._getComponent(comp.currentChild, checkParents=True)
+				c = self._libraryContext().getComponent(comp.currentChild, checkParents=True)
 			except:
 				pass
-		if masterOnly and not self._isComponent(c):
+		if masterOnly and not self._libraryContext().isComponent(c):
 			c = None
 		if c and primaryOnly:
 			return [c]
 		cs = [c] if c else []
 		for child in comp.selectedChildren:
-			c = self._getComponent(child, checkParents=False)
+			c = self._libraryContext().getComponent(child, checkParents=False)
 			if not c or not self._couldBeLibrarySubComp(c):
 				continue
-			if masterOnly and not self._isMasterComponent(c):
+			if masterOnly and not self._libraryContext().isComponent(c, checkMaster=True):
 				continue
 			if c and c not in cs:
 				cs.append(c)
 		return cs
 
 	def _couldBeLibrarySubComp(self, comp: 'COMP'):
-		if not comp or not self._libraryPackagesRoot():
+		if not comp or not self._libraryContext().isWithinPackageRoot(comp):
 			return False
 		if comp.path.startswith(self.ownerComp.path + '/'):
 			return False
-		return comp.path.startswith(self._libraryPackagesRoot().path + '/')
+		return True
 
 	def _getCurrentPackage(self):
 		pane = getActiveEditor()
 		comp = pane.owner if pane else None
 		if not comp or not self._couldBeLibrarySubComp(comp):
 			return None
-		return self._getPackage(comp, checkParents=True)
-
-	def _isComponent(self, comp: 'COMP'):
-		if not comp:
-			return False
-		tags = self._libraryConfig().componentTags
-		if tags:
-			return any(tag in tags for tag in comp.tags)
-		return bool(CompInfo(comp))
-
-	def _isPackage(self, comp: 'COMP'):
-		if not comp:
-			return
-		tags = self._libraryConfig().packageTags
-		if tags:
-			return any(tag in tags for tag in comp.tags)
-		return bool(PackageInfo(comp))
-
-	def _getComponent(self, comp: 'COMP', checkParents: bool):
-		if not comp or comp is root:
-			return None
-		if self._isComponent(comp):
-			return comp
-		if checkParents:
-			return self._getComponent(comp.parent(), checkParents=True)
-
-	def _getPackage(self, comp: 'COMP', checkParents: bool):
-		if not comp or comp is root:
-			return None
-		if self._isPackage(comp):
-			return comp
-		if checkParents:
-			return self._getPackage(comp.parent(), checkParents=True)
+		return self._libraryContext().getPackage(comp, checkParents=True)
 
 	def buildCurrentComponentTable(self, dat: 'scriptDAT'):
 		dat.clear()
@@ -315,4 +249,3 @@ class LibraryTools(CallbacksExt):
 	def SaveCurrentPackage(self, **kwargs):
 		comp = self._getCurrentPackage()
 		self.SavePackage(comp, **kwargs)
-
