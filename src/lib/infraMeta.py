@@ -315,6 +315,31 @@ class LibraryContext:
 		path = self.packageRoot.relativePath(comp).strip('./')
 		return self.libraryInfo.libraryName + '.' + path.replace('/', '.')
 
+	def packages(self, recursive=False) -> List['COMP']:
+		return self.packagesIn(self.packageRoot, recursive)
+
+	def packagesIn(self, packageRoot: 'COMP', recursive=False) -> List['COMP']:
+		return self._findComps(packageRoot, self.packageTags, recursive)
+
+	def componentsIn(self, comp: 'COMP', recursive=False) -> List['COMP']:
+		return self._findComps(comp, self.componentTags, recursive)
+
+	@staticmethod
+	def _findComps(comp: 'COMP', tags: List[str], recursive: bool):
+		if not comp or not tags:
+			return []
+		if recursive:
+			return comp.findChildren(
+				type=COMP,
+				tags=tags,
+			)
+		else:
+			return comp.findChildren(
+				type=COMP,
+				maxDepth=1,
+				tags=tags,
+			)
+
 @dataclass
 class CompMetaData(DataObjectBase):
 	opType: Optional[str] = None

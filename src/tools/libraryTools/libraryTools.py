@@ -10,16 +10,6 @@ if False:
 	from _stubs import *
 	from _typeAliases import *
 
-	class _ConfigPar:
-		Libraryroot: OPParamT
-		Librarymeta: OPParamT
-		Packageroot: OPParamT
-		Packagetags: StrParamT
-		Componenttags: StrParamT
-		Metafilesuffix: StrParamT
-	class _ConfigComp(COMP):
-		par: _ConfigPar
-
 	class _ToolsPar:
 		Libraryconfig: OPParamT
 		Callbackdat: OPParamT
