@@ -56,6 +56,7 @@ class LibraryIndex:
 			'shortName',
 			'fullName',
 			'path',
+			'relPath',
 			'packageId',
 			'tags',
 			'opVersion',
@@ -66,13 +67,13 @@ class LibraryIndex:
 			info = CompInfo(comp)
 			if not info:
 				continue
-			relPath = context.packageRoot.relativePath(comp).strip('./')
 			packageInfo = PackageInfo(comp.parent())
 			dat.appendRow([
 				info.opType,
 				info.opTypeShortName,
-				relPath,
+				context.packageRoot.relativePath(comp).strip('./'),
 				comp.path,
+				context.libraryRoot.relativePath(comp).strip('./'),
 				packageInfo.packageId if packageInfo else '',
 				' '.join(sorted(comp.tags)),
 				info.opVersion,
