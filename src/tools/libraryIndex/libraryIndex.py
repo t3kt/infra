@@ -1,4 +1,6 @@
-from infraMeta import LibraryContext, PackageInfo
+from typing import Dict
+
+from infraMeta import LibraryContext, PackageInfo, CompInfo
 
 # noinspection PyUnreachableCode
 if False:
@@ -31,13 +33,49 @@ class LibraryIndex:
 		dat.appendRow([
 			'packageId',
 			'path',
+			'relPath',
+			'depth',
 		])
 		context = self._libraryContext()
 		for package in context.packages(recursive=True):
 			info = PackageInfo(package)
-			if info:
-				dat.appendRow([
-					info.packageId,
-					package.path,
-				])
+			if not info:
+				continue
+			relPath = context.packageRoot.relativePath(package).strip('./')
+			dat.appendRow([
+				info.packageId,
+				package.path,
+				relPath,
+				relPath.count('/'),
+			])
+
+	def buildComponentTable(self, dat: 'scriptDAT'):
+		dat.clear()
+		dat.appendRow([
+			'opType',
+			'shortName',
+			'fullName',
+			'path',
+			'packageId',
+			'tags',
+			'opVersion',
+			'opStatus',
+		])
+		context = self._libraryContext()
+		for comp in context.componentsIn(context.packageRoot, recursive=True):
+			info = CompInfo(comp)
+			if not info:
+				continue
+			relPath = context.packageRoot.relativePath(comp).strip('./')
+			packageInfo = PackageInfo(comp.parent())
+			dat.appendRow([
+				info.opType,
+				info.opTypeShortName,
+				relPath,
+				comp.path,
+				packageInfo.packageId if packageInfo else '',
+				' '.join(sorted(comp.tags)),
+				info.opVersion,
+				info.opStatus,
+			])
 
