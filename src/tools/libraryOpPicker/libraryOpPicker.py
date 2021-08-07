@@ -9,6 +9,7 @@ if False:
 
 	class _PickerPar:
 		Libraryroot: OPParamT
+		Rowheight: IntParamT
 		Callbackdat: OPParamT
 	class _PickerComp(COMP):
 		par: _PickerPar
@@ -101,6 +102,11 @@ class LibraryOpPicker(CallbacksExt):
 		listComp.par.rows = len(self._itemCollection.displayItems)
 		listComp.par.cols = 3  # TODO: maybe have toggle for edit buttons?
 		listComp.par.reset.pulse()
+		self.DoCallback('onListRefresh', {
+			'picker': self,
+			'listComp': self._listComp,
+			'rowHeight': self.ownerComp.par.Rowheight,
+		})
 
 	def _applyFilter(self):
 		item = self.SelectedItem
@@ -136,6 +142,17 @@ class LibraryOpPicker(CallbacksExt):
 
 	def Resetstate(self, _=None):
 		self.ResetState()
+
+	def _setAllExpanded(self, expanded: bool):
+		self._itemCollection.setAllExpansion(expanded)
+		self._applyFilter()
+		self._refreshList()
+
+	def Expandall(self, _=None):
+		self._setAllExpanded(False)  # not sure why this shouldn't be True...
+
+	def Collapseall(self, _=None):
+		self._setAllExpanded(True)
 
 	def _clearFilterText(self):
 		# TODO: clear filter text
@@ -219,9 +236,8 @@ class LibraryOpPicker(CallbacksExt):
 		elif col == 3:
 			attribs.colWidth = 26
 
-	@staticmethod
-	def list_onInitTable(attribs: 'ListAttributes'):
-		attribs.rowHeight = 26
+	def list_onInitTable(self, attribs: 'ListAttributes'):
+		attribs.rowHeight = self.ownerComp.par.Rowheight
 		attribs.bgColor = ipar.listConfig.Bgcolorr, ipar.listConfig.Bgcolorg, ipar.listConfig.Bgcolorb
 		attribs.textColor = ipar.listConfig.Textcolorr, ipar.listConfig.Textcolorg, ipar.listConfig.Textcolorb
 		attribs.fontFace = 'Roboto'
@@ -436,6 +452,10 @@ class _ItemCollection:
 				package.comps.append(comp)
 				# don't include comps without packages
 				self.comps.append(comp)
+
+	def setAllExpansion(self, expanded: bool):
+		for package in self.packages:
+			package.isExpanded = expanded
 
 	def refreshDisplayItems(self, settings: Optional[_ViewSettings]):
 		settings = settings or _ViewSettings()

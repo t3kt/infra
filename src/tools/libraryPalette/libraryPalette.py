@@ -14,6 +14,7 @@ if False:
 	iop.picker = LibraryOpPicker(COMP())
 
 	class _PalettePar:
+		h: IntParamT
 		Libraryindex: OPParamT
 		Libraryroot: OPParamT
 		Devel: BoolParamT
@@ -21,6 +22,9 @@ if False:
 		Newopcolorg: FloatParamT
 		Newopcolorb: FloatParamT
 		Callbackdat: OPParamT
+		Autoheight: BoolParamT
+		Minheight: IntParamT
+		Maxheight: IntParamT
 	class _PaletteComp(COMP):
 		par: _PalettePar
 
@@ -157,3 +161,12 @@ class LibraryPalette(CallbacksExt):
 		dat.viewer = True
 		par.val = dat
 		ui.undo.endBlock()
+
+	def picker_onListRefresh(self, listComp: 'listCOMP', rowHeight: float):
+		if not self.ownerComp.par.Autoheight:
+			return
+		heightPar = self.ownerComp.par.h
+		if heightPar.mode != ParMode.CONSTANT:
+			return
+		h = listComp.par.rows * rowHeight
+		heightPar.val = tdu.clamp(h, self.ownerComp.par.Minheight, self.ownerComp.par.Maxheight)

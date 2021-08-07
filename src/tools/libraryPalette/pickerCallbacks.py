@@ -14,3 +14,9 @@ def onPickItem(info: dict):
 def onEditItem(info: dict):
 	item = info['item']
 	pass
+
+def onListRefresh(info: dict):
+	picker = info['picker']
+	listComp = info['listComp']
+	rowHeight = info['rowHeight']
+	ext.palette.picker_onListRefresh(listComp, rowHeight)
