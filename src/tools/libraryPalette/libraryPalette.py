@@ -168,5 +168,5 @@ class LibraryPalette(CallbacksExt):
 		heightPar = self.ownerComp.par.h
 		if heightPar.mode != ParMode.CONSTANT:
 			return
-		h = listComp.par.rows * rowHeight
+		h = listComp.par.rows * rowHeight + 60
 		heightPar.val = tdu.clamp(h, self.ownerComp.par.Minheight, self.ownerComp.par.Maxheight)
