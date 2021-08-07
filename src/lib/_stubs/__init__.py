@@ -1665,7 +1665,7 @@ class MAT(OP):
 _AnyOpT = _T.Union[OP, DAT, COMP, CHOP, SOP, TOP, MAT, '_AnyCompT']
 AnyOpT = _AnyOpT
 
-baseCOMP = COMP
+baseCOMP = engineCOMP = COMP
 panelCOMP = PanelCOMP
 mergeDAT = nullDAT = parameterexecuteDAT = parameterDAT = tableDAT = textDAT = scriptDAT = inDAT = outDAT = infoDAT = DAT
 parameterCHOP = nullCHOP = selectCHOP = inCHOP = outCHOP = CHOP
