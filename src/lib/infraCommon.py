@@ -78,3 +78,13 @@ def excludeKeys(d, keys):
 def focusFirstCustomParameterPage(o: 'COMP'):
 	if o and o.customPages:
 		o.par.pageindex = len(o.pages)
+
+def detachTox(comp: 'COMP'):
+	if not comp or comp.par['externaltox'] is None:
+		return
+	if not comp.par.externaltox and comp.par.externaltox.mode == ParMode.CONSTANT:
+		return
+	comp.par.reloadtoxonstart.expr = ''
+	comp.par.reloadtoxonstart.val = False
+	comp.par.externaltox.expr = ''
+	comp.par.externaltox.val = ''

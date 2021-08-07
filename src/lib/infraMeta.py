@@ -251,6 +251,18 @@ class LibraryContext:
 	def libraryVersion(self):
 		return str(self.libraryInfo.metaPar.Libraryversion)
 
+	def resolvePath(self, path: str) -> 'Optional[COMP]':
+		if not self or not path:
+			return None
+		if path.startswith(self.packageRoot.path + '/'):
+			return op(path)
+		origRootPath = '/' + self.libraryName + '/'
+		if path.startswith(origRootPath):
+			return self.libraryRoot.op(path.replace(origRootPath, ''))
+		if path.startswith('/'):
+			raise ValueError(f'Invalid path outside package root: {path!r}')
+		return self.packageRoot.op(path)
+
 	def _doCallback(self, name: str, info: dict):
 		if not self.callbacks:
 			return

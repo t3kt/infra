@@ -9,6 +9,7 @@ if False:
 
 	class _PickerPar:
 		Libraryroot: OPParamT
+		Callbackdat: OPParamT
 	class _PickerComp(COMP):
 		par: _PickerPar
 
@@ -148,13 +149,19 @@ class LibraryOpPicker(CallbacksExt):
 				return
 			else:
 				self._selectItem(item, scroll=False)
-		self.DoCallback('onPickItem', {'item': item})
+		self.DoCallback('onPickItem', {
+			'picker': self,
+			'item': item,
+		})
 
 	def onEditItem(self):
 		item = self.SelectedItem
 		if not item:
 			return
-		ext.callbacks.DoCallback('onEditItem', {'item': item})
+		self.DoCallback('onEditItem', {
+			'picker': self,
+			'item': item,
+		})
 
 	def list_onInitCell(self, row: int, col: int, attribs: 'ListAttributes'):
 		item = self._itemCollection.itemForRow(row)
@@ -290,6 +297,22 @@ class LibraryOpPicker(CallbacksExt):
 				self.onEditItem()
 			else:
 				self.onPickItem()
+
+	def Createcallbacks(self, _=None):
+		par = self.ownerComp.par.Callbackdat
+		if par.eval():
+			return
+		ui.undo.startBlock('Create callbacks')
+		dat = self.ownerComp.parent().create(textDAT, self.ownerComp.name + '_callbacks')
+		dat.copy(self.ownerComp.op('callbacksTemplate'))
+		dat.par.extension = 'py'
+		dat.nodeX = self.ownerComp.nodeX
+		dat.nodeY = self.ownerComp.nodeY - 150
+		dat.dock = self.ownerComp
+		self.ownerComp.showDocked = True
+		dat.viewer = True
+		par.val = dat
+		ui.undo.endBlock()
 
 @dataclass
 class PickerItem:
