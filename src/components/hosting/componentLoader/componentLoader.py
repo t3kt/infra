@@ -41,9 +41,12 @@ class ComponentLoader(CallbacksExt):
 	@property
 	def _localComponent(self) -> 'Optional[COMP]':
 		for o in self.ownerComp.children:
-			if o.isCOMP and not isinstance(o, engineCOMP):
-				# noinspection PyTypeChecker
-				return o
+			if not o.isCOMP:
+				continue
+			if isinstance(o, engineCOMP) or o.name == 'componentMeta':
+				continue
+			# noinspection PyTypeChecker
+			return o
 
 	@property
 	def IsLoaded(self):
@@ -52,6 +55,20 @@ class ComponentLoader(CallbacksExt):
 			return bool(engine.par.file and not engine.warnings())
 		else:
 			return bool(self._localComponent)
+
+	@property
+	def IsLoading(self):
+		if self._useEngine:
+			return bool(self._engine.par.file) and bool(self._engine.warnings())
+		return False
+
+	@property
+	def LoadingStatus(self):
+		if self.IsLoading:
+			return 'loading'
+		if self.IsLoaded:
+			return 'loaded'
+		return 'unloaded'
 
 	@property
 	def _engine(self) -> 'engineCOMP':
@@ -175,7 +192,7 @@ class ComponentLoader(CallbacksExt):
 				comp.destroy()
 			except:
 				pass
-		self.ownerComp.par.Toxtoload = ''
+		# self.ownerComp.par.Toxtoload = ''
 		run('args[0]()', self._cleanUpUnload)
 		self.DoCallback('onComponentUnloaded')
 
