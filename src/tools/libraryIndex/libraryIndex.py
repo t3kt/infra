@@ -9,7 +9,7 @@ if False:
 	from _typeAliases import *
 
 	class _IndexPar:
-		Libraryconfig: OPParamT
+		Librarymeta: OPParamT
 	class _IndexComp(COMP):
 		par: _IndexPar
 
@@ -19,7 +19,7 @@ class LibraryIndex:
 		self.ownerComp = ownerComp  # type: _IndexComp
 
 	def _libraryContext(self):
-		return LibraryContext(self.ownerComp.par.Libraryconfig.eval())
+		return LibraryContext(self.ownerComp.par.Librarymeta.eval())
 
 	def buildLibraryInfoTable(self, dat: 'scriptDAT'):
 		dat.clear()

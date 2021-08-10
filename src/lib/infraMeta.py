@@ -11,7 +11,7 @@ if False:
 	from _typeAliases import *
 	from TDCallbacksExt import CallbacksExt
 
-	class _MetaParsT:
+	class _MetaParsT(ParCollection):
 		Hostop: 'OPParamT'
 		Helpurl: 'StrParamT'
 		Helpdat: 'OPParamT'
@@ -33,21 +33,13 @@ if False:
 		par: _PackageMetaParsT
 
 	class _LibraryMetaParsT(_MetaParsT):
-		pass
-
-	class _LibraryMetaCompT(COMP):
-		par: _LibraryMetaParsT
-
-	class _LibraryConfigParsT:
-		Libraryroot: OPParamT
-		Librarymeta: OPParamT
 		Packageroot: OPParamT
 		Packagetags: StrParamT
 		Componenttags: StrParamT
 		Metafilesuffix: StrParamT
 
-	class _LibraryConfigCompT(COMP):
-		par: _LibraryConfigParsT
+	class _LibraryMetaCompT(COMP):
+		par: _LibraryMetaParsT
 
 class CompInfo:
 	comp: 'Optional[AnyOpT]'
@@ -202,46 +194,46 @@ class LibraryInfo:
 		return str(self.metaPar.Libraryname)
 
 class LibraryContext:
-	configComp: 'Optional[_LibraryConfigCompT]'
-	configPar: 'Optional[_LibraryConfigParsT]'
+	metaComp: 'Optional[_LibraryMetaCompT]'
+	metaPar: 'Optional[_LibraryMetaParsT]'
 	libraryRoot: 'Optional[COMP]'
 	libraryInfo: 'LibraryInfo'
 	callbacks: 'Optional[CallbacksExt]'
 
 	def __init__(
 			self,
-			configComp: 'COMP',
+			metaComp: 'COMP',
 			callbacks: 'Optional[CallbacksExt]' = None,
 	):
-		configComp = op(configComp)
-		if not configComp or not configComp.isCOMP:
-			return
-		if configComp.name != 'libraryConfig' or configComp.par['Libraryroot'] is None:
-			return
 		# noinspection PyTypeChecker
-		self.configComp = configComp
-		self.configPar = self.configComp.par
-		self.libraryRoot = self.configComp.par.Libraryroot.eval()
+		metaComp = op(metaComp)  # type: _LibraryMetaCompT
+		if not metaComp or not metaComp.isCOMP:
+			return
+		if metaComp.name != 'libraryMeta' or metaComp.par['Hostop'] is None:
+			return
+		self.libraryRoot = metaComp.par.Hostop.eval()
 		self.libraryInfo = LibraryInfo(self.libraryRoot)
+		self.metaComp = self.libraryInfo.metaComp
+		self.metaPar = self.libraryInfo.metaPar
 		self.callbacks = callbacks
 
 	@property
 	def valid(self):
-		return bool(self.configComp and self.libraryRoot)
+		return bool(self.libraryInfo)
 
 	@property
 	def packageRoot(self) -> 'Optional[COMP]':
 		if not self:
 			return None
-		return self.configPar.Packageroot.eval() or self.libraryRoot
+		return self.metaPar.Packageroot.eval() or self.libraryRoot
 
 	@property
 	def componentTags(self) -> 'List[str]':
-		return tdu.split(self.configPar.Componenttags)
+		return tdu.split(self.metaPar.Componenttags)
 
 	@property
 	def packageTags(self) -> 'List[str]':
-		return tdu.split(self.configPar.Packagetags)
+		return tdu.split(self.metaPar.Packagetags)
 
 	@property
 	def libraryName(self):
@@ -249,7 +241,7 @@ class LibraryContext:
 
 	@property
 	def libraryVersion(self):
-		return str(self.libraryInfo.metaPar.Libraryversion)
+		return str(self.metaPar.Libraryversion)
 
 	def resolvePath(self, path: str) -> 'Optional[COMP]':
 		if not self or not path:

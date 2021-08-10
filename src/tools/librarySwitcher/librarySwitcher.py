@@ -14,15 +14,15 @@ class LibrarySwitcher:
 			dat: 'DAT'):
 		dat.clear()
 		dat.appendRow(['path', 'name'])
-		configs = root.findChildren(
+		metas = root.findChildren(
 			type=baseCOMP,
-			path='*/libraryConfig',
+			path='*/libraryMeta',
 		)
-		for config in configs:
+		for meta in metas:
 			# hard-coded exclusion...
-			if config.path == '/infraMeta/meta/libraryConfig':
+			if meta.path == '/infraMeta/meta/libraryMeta':
 				continue
-			info = LibraryInfo(config.par.Libraryroot)
+			info = LibraryInfo(meta.par.Hostop)
 			if info:
 				dat.appendRow([
 					info.comp.path,
