@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 # noinspection PyUnreachableCode
 if False:
@@ -88,3 +88,6 @@ def detachTox(comp: 'COMP'):
 	comp.par.reloadtoxonstart.val = False
 	comp.par.externaltox.expr = ''
 	comp.par.externaltox.val = ''
+
+def queueCall(action: Callable, *args, delayFrames=5, delayRef=None):
+	run('args[0](*(args[1:]))', action, *args, delayFrames=delayFrames, delayRef=delayRef or root)
