@@ -89,5 +89,14 @@ def detachTox(comp: 'COMP'):
 	comp.par.externaltox.expr = ''
 	comp.par.externaltox.val = ''
 
+class Action:
+	def __init__(self, func: Optional[Callable], args: list = None):
+		self.func = func
+		self.args = args
+
+	def __call__(self, *args, **kwargs):
+		if self.func:
+			self.func(*self.args, *args, **kwargs)
+
 def queueCall(action: Callable, *args, delayFrames=5, delayRef=None):
 	run('args[0](*(args[1:]))', action, *args, delayFrames=delayFrames, delayRef=delayRef or root)

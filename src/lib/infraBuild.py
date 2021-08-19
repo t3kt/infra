@@ -1,4 +1,5 @@
-from infraCommon import detachTox, queueCall
+from abc import ABC, abstractmethod
+from infraCommon import detachTox, queueCall, Action
 from infraTools import InfraTags
 from typing import Callable, List, Optional
 
@@ -9,14 +10,91 @@ if False:
 
 def _noLog(msg: str): pass
 
+class Builder(ABC):
+	def __init__(
+			self,
+			log: Optional[Callable[[str], None]],
+			updateStatus: Callable[[str], None],
+			libraryName: str,
+			sourceToxPath: str,
+			buildDirPath: str,
+			paneName: Optional[str] = None,
+	):
+		self._log = log or _noLog
+		self._updateStatus = updateStatus
+		self.paneName = paneName or 'infraBuildPane'
+		self.context = None  # type: Optional[BuildContext]
+		self.libraryName = libraryName
+		self.sourceToxPath = sourceToxPath
+		self.buildDirPath = buildDirPath
+
+	def openLibraryNetwork(self):
+		comp = self.getLibraryRoot()
+		if not self.context:
+			self.initialize()
+		self.context.openNetworkPane(comp)
+
+	def initialize(self):
+		self.log('Initializing builder')
+		self.context = self.createBuildContext()
+		self.log('Build context initialized')
+
+	def createBuildContext(self) -> Optional['BuildContext']:
+		return BuildContext(self)
+
+	def getLibraryRoot(self) -> Optional[COMP]:
+		return getattr(op, self.libraryName)
+
+	def unloadLibrary(self):
+		comp = self.getLibraryRoot()
+		if not comp:
+			return
+		self.log('Unloading library')
+		# noinspection PyBroadException
+		try:
+			comp.destroy()
+		except:
+			pass
+
+	def loadLibrary(self, thenRun: Optional[Callable] = None):
+		self.unloadLibrary()
+		self.log(f'Loading library tox {self.sourceToxPath}...')
+		def _load():
+			comp = root.loadTox(self.sourceToxPath)
+			self.log(f'Loaded library tox: {comp}')
+			if thenRun:
+				self.queueCall(thenRun)
+		self.queueCall(_load)
+
+	def startBuild(self, thenRun: Optional[Callable] = None):
+		self.log('Starting build')
+		self.initialize()
+
+		def _afterLoad():
+			self.context.openNetworkPane(self.getLibraryRoot())
+			self.queueCall(self.runBuildStage, 0, thenRun)
+
+		self.loadLibrary(_afterLoad)
+
+	@abstractmethod
+	def runBuildStage(self, stage: int, thenRun: Optional[Callable] = None):
+		pass
+
+	def log(self, message: str):
+		self._log(message)
+
+	@staticmethod
+	def queueCall(action: Callable, *args, delayFrames=5):
+		queueCall(action, *args, delayFrames=delayFrames)
+
 class BuildContext:
 	def __init__(
 			self,
-			log: Callable[[str], None] = None,
-			paneName: Optional[str] = None,
+			builder: Builder,
 	):
-		self.log = log or _noLog
-		self._paneName = paneName or 'infraBuildPane'
+		self.builder = builder
+		self.log = builder.log or _noLog
+		self._paneName = builder.paneName or 'infraBuildPane'
 		self._pane: Optional[NetworkEditor] = None
 
 	def _findExistingPane(self):
@@ -81,6 +159,13 @@ class BuildContext:
 		dat.par.file.expr = ''
 		dat.par.file.val = ''
 
+	def detachAllFileSyncDats(self, scope: 'COMP'):
+		if not scope:
+			return
+		self.log(f'Detaching file sync dats in {scope}...')
+		for dat in scope.findChildren(tags=[InfraTags.fileSync.name], type=DAT):
+			self.detachDat(dat, reloadFirst=True)
+
 	def resetCustomPars(self, o: 'OP'):
 		if not o:
 			return
@@ -129,18 +214,26 @@ class BuildContext:
 		toRemove = list(comp.findChildren(tags=[InfraTags.buildExclude.name]))
 		self.safeDestroyOps(toRemove)
 
-	@staticmethod
-	def queueCall(action: Callable, *args, delayFrames=5):
-		queueCall(action, *args, delayFrames=delayFrames)
+	def queueCall(self, action: Callable, *args, delayFrames=5):
+		self.builder.queueCall(action, *args, delayFrames=delayFrames)
+
+	def runBuildScript(self, dat: 'DAT', thenRun: Callable):
+		self.log(f'Running build script: {dat}')
+
+		def _finish():
+			self.log(f'Finished running build script: {dat}')
+			self.queueCall(thenRun)
+
+		subContext = BuildTaskContext(self.builder, _finish)
+		dat.run(subContext, delayFrames=5)
 
 class BuildTaskContext(BuildContext):
 	def __init__(
 			self,
+			builder: Builder,
 			finish: Callable[[], None],
-			log: Callable[[str], None] = None,
-			paneName: Optional[str] = None,
 	):
-		super().__init__(log, paneName)
+		super().__init__(builder)
 		self._finish = finish
 
 	def finishTask(self):
