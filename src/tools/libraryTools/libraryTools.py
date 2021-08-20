@@ -82,13 +82,13 @@ class LibraryTools(CallbacksExt):
 		tox = info.toxFile
 		comp.save(tox)
 
-		metaSuffix = context.configPar.Metafilesuffix.eval()
+		metaSuffix = context.metaPar.Metafilesuffix.eval()
 		if metaSuffix:
 			metaFile = tox.replace('.tox', metaSuffix)
 			metaData = self._extractCompMetaData(comp)
 			with open(metaFile, 'w') as f:
 				f.write(metaData.toJson(minify=False))
-		msg = f'Saved TOX {tox} (version: {info.opVersion}'
+		msg = f'Saved TOX {tox} (version: {info.opVersion})'
 		ui.status = msg
 		_logger.info(msg)
 
