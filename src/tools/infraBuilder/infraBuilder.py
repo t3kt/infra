@@ -29,7 +29,8 @@ class InfraBuilder:
 		name = ipar.builderState.Selectedlibrary.eval()
 		if not name:
 			return
-		srcTox = table[name, 'srcToxPath'].val
+		self.ownerComp.op('libraryTools').par.Libraryroot = '/' + name
+		srcTox = table[name, 'sourceToxPath'].val
 		return _InfraBuilderBase(
 			log=log,
 			updateStatus=updateStatus,
@@ -81,6 +82,7 @@ class _InfraBuilderBase(Builder):
 			self.queueCall(continueAction)
 		elif stage == 6:
 			self.exportLibraryTox()
+			self.context.closeNetworkPane()
 			self.queueCall(thenRun)
 		else:
 			self.queueCall(thenRun)
@@ -92,6 +94,7 @@ class _InfraBuilderBase(Builder):
 		# TODO: showCustomOnly?
 		iop.libraryTools.UpdateComponentMetadata(comp)
 		# TODO: update comp params
+		self._updateComponentParams(comp)
 		self.context.resetCustomPars(comp)
 		# TODO: lock buildLock pars
 
@@ -101,3 +104,13 @@ class _InfraBuilderBase(Builder):
 		# TODO: process docs
 
 		self.queueCall(thenRun)
+
+	def _updateComponentParams(self, comp: 'COMP'):
+		self.log(f'Updating component params {comp}')
+		comp.par.enablecloning = False
+		comp.par.reloadtoxonstart.expr = ''
+		comp.par.reloadtoxonstart.val = False
+		comp.par.reloadcustom.expr = ''
+		comp.par.reloadcustom.val = False
+		comp.par.reloadbuiltin.expr = ''
+		comp.par.reloadbuiltin.val = False

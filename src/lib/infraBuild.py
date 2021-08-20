@@ -47,7 +47,7 @@ class Builder(ABC):
 		return BuildContext(self)
 
 	def getLibraryRoot(self) -> Optional[COMP]:
-		return getattr(op, self.libraryName)
+		return getattr(op, self.libraryName, None)
 
 	def unloadLibrary(self):
 		comp = self.getLibraryRoot()
