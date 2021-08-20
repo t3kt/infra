@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from infraCommon import detachTox, queueCall, Action
+from infraCommon import detachTox, queueCall, Action, focusFirstCustomParameterPage
 from infraMeta import LibraryContext, PackageInfo
 from infraTools import InfraTags
+from pathlib import Path
 from typing import Callable, List, Optional
 
 # noinspection PyUnreachableCode
@@ -19,6 +20,7 @@ class Builder(ABC):
 			libraryName: str,
 			sourceToxPath: str,
 			buildDirPath: str,
+			buildBaseName: Optional[str] = None,
 			paneName: Optional[str] = None,
 	):
 		self._log = log or _noLog
@@ -28,6 +30,7 @@ class Builder(ABC):
 		self.libraryName = libraryName
 		self.sourceToxPath = sourceToxPath
 		self.buildDirPath = buildDirPath
+		self.buildBaseName = buildBaseName
 
 	def openLibraryNetwork(self):
 		comp = self.getLibraryRoot()
@@ -62,6 +65,9 @@ class Builder(ABC):
 		self.log(f'Loading library tox {self.sourceToxPath}...')
 		def _load():
 			comp = root.loadTox(self.sourceToxPath)
+			p = comp.par['Devel']
+			if p is not None:
+				p.val = False
 			self.log(f'Loaded library tox: {comp}')
 			if thenRun:
 				self.queueCall(thenRun)
@@ -143,6 +149,36 @@ class Builder(ABC):
 		# TODO: set comp color
 		# TODO: process docs
 		self.queueCall(thenRun)
+
+	def finalizeLibraryPars(self):
+		self.log('Finalizing library parameters')
+		libContext = self.getLibraryContext()
+		library = libContext.libraryRoot
+		self.context.moveNetworkPane(library)
+		p = library.par['Devel']
+		if p is not None:
+			p.val = False
+			p.readOnly = True
+		library.par.externaltox = ''
+		library.par.enablecloning = False
+		library.par.savebackup = True
+		library.par.reloadtoxonstart = True
+		library.par.reloadcustom = True
+		library.par.reloadbuiltin = True
+		focusFirstCustomParameterPage(library)
+
+	def exportLibraryTox(self):
+		libContext = self.getLibraryContext()
+		self.context.focusInNetworkPane(libContext.libraryRoot)
+		toxName = self.buildBaseName or libContext.libraryName
+		if libContext.libraryVersion:
+			toxName += '-' + libContext.libraryVersion
+		toxName += '.tox'
+		tox = Path(self.buildDirPath) / toxName
+		tox.parent.mkdir(parents=True, exist_ok=True)
+		self.log(f'Writing library tox to {tox.as_posix()}')
+		libContext.libraryRoot.save(tox.as_posix())
+		self.log('Finished exporting library tox')
 
 	def log(self, message: str):
 		self._log(message)

@@ -37,6 +37,9 @@ class InfraBuilder:
 			sourceToxPath=srcTox,
 		)
 
+	def Openwindow(self, _=None):
+		self.ownerComp.op('window').par.winopen.pulse()
+
 class _InfraBuilderBase(Builder):
 	def __init__(
 			self,
@@ -74,23 +77,27 @@ class _InfraBuilderBase(Builder):
 			self.context.removeBuildExcludeOps(library)
 			self.queueCall(continueAction)
 		elif stage == 5:
-			self._finalizeLibraryPars()
+			self.finalizeLibraryPars()
 			self.queueCall(continueAction)
 		elif stage == 6:
-			self._finalizeLibraryPars()
+			self.exportLibraryTox()
+			self.queueCall(thenRun)
+		else:
 			self.queueCall(thenRun)
 
 	def _updateLibraryInfo(self, library: COMP):
 		pass
 
-	def _finalizeLibraryPars(self):
-		pass
-
-	def _exportLibraryTox(self):
-		pass
-
 	def processCompImpl(self, comp: 'COMP', thenRun: Callable):
 		# TODO: showCustomOnly?
 		iop.libraryTools.UpdateComponentMetadata(comp)
+		# TODO: update comp params
+		self.context.resetCustomPars(comp)
+		# TODO: lock buildLock pars
 
-		pass
+		# TODO: process sub components
+		# TODO: update op image
+		# TODO: set comp color
+		# TODO: process docs
+
+		self.queueCall(thenRun)
