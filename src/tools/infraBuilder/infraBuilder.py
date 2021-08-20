@@ -6,6 +6,12 @@ from typing import Callable, Optional
 if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
+	from _typeAliases import *
+
+	class _BuilderStatePar:
+		Selectedlibrary: StrParamT
+
+	ipar.builderState = _BuilderStatePar()
 
 class InfraBuilder:
 	def __init__(self, ownerComp: 'COMP'):
@@ -14,8 +20,19 @@ class InfraBuilder:
 	def createBuilder(self, info: dict):
 		buildManager = info['buildManager']
 		log = info['log']
-		updateState = info['updateStatus']
-		pass
+		updateStatus = info['updateStatus']
+
+		table = self.ownerComp.op('infraLibraries')
+		name = ipar.builderState.Selectedlibrary.eval()
+		if not name:
+			return
+		srcTox = table[name, 'srcToxPath'].val
+		return _InfraBuilderBase(
+			log=log,
+			updateStatus=updateStatus,
+			libraryName=name,
+			sourceToxPath=srcTox,
+		)
 
 class _InfraBuilderBase(Builder):
 	def __init__(
@@ -34,17 +51,40 @@ class _InfraBuilderBase(Builder):
 			paneName='infraBuildPane',
 		)
 
-	def runBuildStage(self, stage: int, thenRun: Optional[Callable] = None):
+	def runBuildStage(self, stage: int, thenRun: Callable):
+		continueAction = Action(self.runBuildStage, [stage + 1, thenRun])
 		library = self.getLibraryRoot()
 		if stage == 0:
 			self.context.detachAllFileSyncDats(library)
+			self.queueCall(continueAction)
 		elif stage == 1:
 			# TODO: clear old docs?
 			self._updateLibraryInfo(library)
+			self.queueCall(continueAction)
 		elif stage == 2:
 			# TODO: update library image?
-			pass
-		self.queueCall(Action(self.runBuildStage, [stage + 1, thenRun]))
+			self.processPackages(continueAction)
+		elif stage == 3:
+			self.context.lockBuildLockOps(library)
+			self.queueCall(continueAction)
+		elif stage == 4:
+			self.context.removeBuildExcludeOps(library)
+			self.queueCall(continueAction)
+		elif stage == 5:
+			self._finalizeLibraryPars()
+			self.queueCall(continueAction)
+		elif stage == 6:
+			self._finalizeLibraryPars()
+			self.queueCall(thenRun)
 
 	def _updateLibraryInfo(self, library: COMP):
+		pass
+
+	def _finalizeLibraryPars(self):
+		pass
+
+	def _exportLibraryTox(self):
+		pass
+
+	def processCompImpl(self, comp: 'COMP', thenRun: Callable):
 		pass

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from infraCommon import detachTox, queueCall, Action
+from infraMeta import LibraryContext, PackageInfo
 from infraTools import InfraTags
 from typing import Callable, List, Optional
 
@@ -77,8 +78,71 @@ class Builder(ABC):
 		self.loadLibrary(_afterLoad)
 
 	@abstractmethod
-	def runBuildStage(self, stage: int, thenRun: Optional[Callable] = None):
+	def runBuildStage(self, stage: int, thenRun: Callable):
 		pass
+
+	def getLibraryContext(self):
+		return LibraryContext(self.getLibraryRoot())
+
+	def findPackages(self):
+		return self.getLibraryContext().packages(recursive=True)
+
+	def processPackages(self, thenRun: Callable):
+		packages = self.findPackages()
+		self.log(f'Processing {len(packages)} packages')
+		self.queueCall(Action(self.processPackagesStage, [packages, thenRun]))
+
+	def processPackagesStage(self, packages: List['COMP'], thenRun: Callable):
+		if not packages:
+			self.queueCall(thenRun)
+			return
+		package = packages.pop(0)
+		def _continue():
+			self.processPackagesStage(packages, thenRun)
+		self.queueCall(Action(self.processPackage, [package, _continue]))
+
+	def processPackage(self, package: 'COMP', thenRun: Callable):
+		self.log(f'Processing package: {package}')
+		self.context.moveNetworkPane(package)
+		self.context.detachTox(package)
+		libContext = self.getLibraryContext()
+		comps = libContext.componentsIn(package, recursive=False)
+		self.log(f'Processing {len(comps)} components in {package}')
+		def _continue():
+			self.log(f'Finished processing package {package}')
+			self.queueCall(thenRun)
+		self.queueCall(Action(self.processCompsStage, [comps, _continue]))
+
+	def processCompsStage(self, comps: List['COMP'], thenRun: Callable):
+		if not comps:
+			self.queueCall(thenRun)
+			return
+		comp = comps.pop(0)
+		self.context.focusInNetworkPane(comp)
+		self.queueCall(Action(self.processComp, [comp, thenRun]))
+
+	def processComp(self, comp: 'COMP', thenRun: Callable):
+		self.log(f'Processing comp {comp}')
+		self.context.focusInNetworkPane(comp)
+		self.context.disableCloning(comp)
+		self.context.detachTox(comp)
+		def _continue():
+			self.log(f'Finished processing {comp}')
+			self.queueCall(thenRun)
+		self.processCompImpl(comp, _continue)
+
+	def processCompImpl(self, comp: 'COMP', thenRun: Callable):
+		# TODO: showCustomOnly?
+		# TODO: update comp meta
+		# TODO: update comp params
+		# TODO: reset custom pars
+		# TODO: lock buildLock pars
+
+		# TODO: process sub components
+		# TODO: update op image
+		# TODO: set comp color
+		# TODO: process docs
+		self.queueCall(thenRun)
 
 	def log(self, message: str):
 		self._log(message)

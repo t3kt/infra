@@ -202,17 +202,17 @@ class LibraryContext:
 
 	def __init__(
 			self,
-			metaComp: 'COMP',
+			metaCompOrRoot: 'COMP',
 			callbacks: 'Optional[CallbacksExt]' = None,
 	):
 		# noinspection PyTypeChecker
-		metaComp = op(metaComp)  # type: _LibraryMetaCompT
-		if not metaComp or not metaComp.isCOMP:
+		metaCompOrRoot = op(metaCompOrRoot)  # type: Union[_LibraryMetaCompT, COMP]
+		if not metaCompOrRoot or not metaCompOrRoot.isCOMP:
 			return
-		if metaComp.name != 'libraryMeta' or metaComp.par['Hostop'] is None:
+		self.libraryInfo = LibraryInfo(metaCompOrRoot)
+		if not self.libraryInfo:
 			return
-		self.libraryRoot = metaComp.par.Hostop.eval()
-		self.libraryInfo = LibraryInfo(self.libraryRoot)
+		self.libraryRoot = self.libraryInfo.comp
 		self.metaComp = self.libraryInfo.metaComp
 		self.metaPar = self.libraryInfo.metaPar
 		self.callbacks = callbacks

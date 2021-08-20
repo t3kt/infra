@@ -1,0 +1,4 @@
+name	label	sourceToxPath
+infraMeta	infraMeta	src/meta/infraMeta.tox
+infraComponents	infraComponents	src/components/infraComponents.tox
+infraPerform	infraPerform	src/perform/infraPerform.tox
