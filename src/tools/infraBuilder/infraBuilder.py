@@ -1,17 +1,20 @@
 from infraBuild import Builder, BuildContext
 from infraCommon import Action
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 # noinspection PyUnreachableCode
 if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
 	from _typeAliases import *
+	from ..libraryTools.libraryTools import LibraryTools
 
 	class _BuilderStatePar:
 		Selectedlibrary: StrParamT
 
 	ipar.builderState = _BuilderStatePar()
+	# noinspection PyTypeHints
+	iop.libraryTools = LibraryTools(COMP())  # type: Union[LibraryTools, COMP]
 
 class InfraBuilder:
 	def __init__(self, ownerComp: 'COMP'):
@@ -87,4 +90,7 @@ class _InfraBuilderBase(Builder):
 		pass
 
 	def processCompImpl(self, comp: 'COMP', thenRun: Callable):
+		# TODO: showCustomOnly?
+		iop.libraryTools.UpdateComponentMetadata(comp)
+
 		pass

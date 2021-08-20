@@ -11,7 +11,7 @@ if False:
 	from _typeAliases import *
 
 	class _ToolsPar:
-		Librarymeta: OPParamT
+		Libraryroot: OPParamT
 		Callbackdat: OPParamT
 	class _ToolsComp(COMP):
 		par: _ToolsPar
@@ -27,7 +27,7 @@ class LibraryTools(CallbacksExt):
 		self.ownerComp = ownerComp  # type: _ToolsComp
 
 	def _libraryContext(self):
-		return LibraryContext(self.ownerComp.par.Librarymeta.eval(), callbacks=self)
+		return LibraryContext(self.ownerComp.par.Libraryroot.eval(), callbacks=self)
 
 	def UpdateComponentMetadata(
 			self,
