@@ -8,7 +8,7 @@ if False:
 
 def getActiveEditor() -> 'NetworkEditor':
 	pane = ui.panes.current
-	if pane.type == PaneType.NETWORKEDITOR:
+	if pane and pane.type == PaneType.NETWORKEDITOR:
 		return pane
 	for pane in ui.panes:
 		if pane.type == PaneType.NETWORKEDITOR:
