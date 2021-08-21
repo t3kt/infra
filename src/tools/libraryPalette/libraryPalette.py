@@ -40,7 +40,7 @@ class LibraryPalette(CallbacksExt):
 
 	def _libraryContext(self):
 		return LibraryContext(
-			metaComp=self.ownerComp.par.Libraryindex.eval().par.Librarymeta.eval(),
+			self.ownerComp.par.Libraryindex.eval().par.Librarymeta.eval(),
 			callbacks=self,
 		)
 
