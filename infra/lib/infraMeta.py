@@ -386,7 +386,7 @@ class LibraryContext:
 			return self.getComponent(comp.parent(), checkParents=True)
 
 	def isWithinPackageRoot(self, comp: 'COMP'):
-		return comp.path.startswith(self.packageRoot.path + '/') if comp else None
+		return comp.path.startswith(self.packageRoot.path + '/') if comp and self.packageRoot else None
 
 	def validateAndGetPackageInfo(self, comp: 'COMP') -> PackageInfo:
 		if not self.isPackage(comp):
