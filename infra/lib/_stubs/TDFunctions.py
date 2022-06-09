@@ -15,11 +15,8 @@
 #
 # _END_HEADER_
 
-import shlex
-import inspect
 import collections
 import TDStoreTools
-import warnings
 import datetime
 
 TDJ = op.TDModules.mod.TDJSON
