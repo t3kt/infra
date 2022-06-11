@@ -19,8 +19,7 @@ class LibrarySwitcher:
 			path='*/libraryMeta',
 		)
 		for meta in metas:
-			# hard-coded exclusion...
-			if meta.path == '/infraMeta/meta/libraryMeta':
+			if meta.par.clone.eval() is meta:
 				continue
 			info = LibraryInfo(meta.par.Hostop)
 			if info:
