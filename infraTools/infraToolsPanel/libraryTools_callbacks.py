@@ -2,19 +2,19 @@
 if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
-	from .toolkitTools import ToolkitTools
-	from infraMeta import CompMeta
+	from .libraryTools import LibraryTools
+	from infraMeta import CompInfo
 
 def onUpdateComponentMetadata(info: dict):
-	toolkitTools = info['toolkitTools']  # type: ToolkitTools
+	libraryTools = info['libraryTools']  # type: LibraryTools
 	comp = info['comp']  # type: COMP
 	params = info.get('params') or {}  # type: dict
-	compMeta = info.get('compMeta')  # type: CompMeta
+	compInfo = info.get('compInfo')  # type: CompInfo
 	pass
 
 def onSaveComponent(info: dict):
-	toolkitTools = info['toolkitTools']  # type: ToolkitTools
+	libraryTools = info['libraryTools']  # type: LibraryTools
 	comp = info['comp']  # type: COMP
 	params = info.get('params') or {}  # type: dict
-	compMeta = info.get('compMeta')  # type: CompMeta
+	compInfo = info.get('compInfo')  # type: CompInfo
 	pass

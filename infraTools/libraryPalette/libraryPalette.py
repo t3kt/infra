@@ -9,7 +9,7 @@ if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
 	from _typeAliases import *
-	from ..libraryOpPicker.libraryOpPicker import LibraryOpPicker, PickerCompItem, PickerPackageItem
+	from infraTools.libraryOpPicker.libraryOpPicker import LibraryOpPicker, PickerCompItem, PickerPackageItem
 
 	iop.picker = LibraryOpPicker(COMP())
 
