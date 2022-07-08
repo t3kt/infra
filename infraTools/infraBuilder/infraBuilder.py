@@ -7,12 +7,8 @@ if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
 	from _typeAliases import *
-	from infraTools.libraryTools.libraryTools import LibraryTools
+	from libraryTools.libraryTools import LibraryTools
 
-	class _BuilderStatePar:
-		Selectedlibrary: StrParamT
-
-	ipar.builderState = _BuilderStatePar()
 	# noinspection PyTypeHints
 	iop.libraryTools = LibraryTools(COMP())  # type: Union[LibraryTools, COMP]
 
@@ -25,12 +21,11 @@ class InfraBuilder:
 		log = info['log']
 		updateStatus = info['updateStatus']
 
-		table = self.ownerComp.op('infraLibraries')
-		name = ipar.builderState.Selectedlibrary.eval()
+		context = iop.libraryTools.GetLibraryContext()
+		name = context.libraryName
 		if not name:
 			return
-		self.ownerComp.op('libraryTools').par.Libraryroot = '/' + name
-		srcTox = table[name, 'sourceToxPath'].val
+		srcTox = context.libraryRootTox
 		return _InfraBuilderBase(
 			log=log,
 			updateStatus=updateStatus,

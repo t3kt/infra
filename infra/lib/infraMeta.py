@@ -343,6 +343,10 @@ class LibraryContext:
 	def libraryVersion(self):
 		return self.libraryInfo.libraryVersion
 
+	@property
+	def libraryRootTox(self):
+		return self.libraryRoot.par.externaltox.eval() if self.libraryRoot else None
+
 	def resolvePath(self, path: str) -> 'Optional[COMP]':
 		if not self or not path:
 			return None
