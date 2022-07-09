@@ -403,6 +403,8 @@ class _ItemCollection:
 		self.comps = []
 		self.displayItems = []
 		packagesById = {}  # type: Dict[str, PickerPackageItem]
+		if not libraryRoot:
+			return
 
 		pathPrefix = libraryRoot.path + '/'
 		# packageId

@@ -9,13 +9,17 @@ if False:
 # called when Reset parameter is pulsed, or on load
 
 def onInitCell(comp, row, col, attribs):
-	ext.picker.list_onInitCell(row, col, attribs)
+	if hasattr(ext, 'picker') and hasattr(ext.picker, 'list_onInitCell'):
+		ext.picker.list_onInitCell(row, col, attribs)
 def onInitRow(comp, row, attribs):
-	ext.picker.list_onInitRow(row, attribs)
+	if hasattr(ext, 'picker') and hasattr(ext.picker, 'list_onInitRow'):
+		ext.picker.list_onInitRow(row, attribs)
 def onInitCol(comp, col, attribs):
-	ext.picker.list_onInitCol(col, attribs)
+	if hasattr(ext, 'picker') and hasattr(ext.picker, 'list_onInitCol'):
+		ext.picker.list_onInitCol(col, attribs)
 def onInitTable(comp, attribs):
-	ext.picker.list_onInitTable(attribs)
+	if hasattr(ext, 'picker') and hasattr(ext.picker, 'list_onInitTable'):
+		ext.picker.list_onInitTable(attribs)
 
 # called during specific events
 #
