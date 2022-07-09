@@ -9,7 +9,7 @@ if False:
 	# noinspection PyUnresolvedReferences
 	from _stubs import *
 	from _typeAliases import *
-	from infraTools.libraryOpPicker.libraryOpPicker import LibraryOpPicker, PickerCompItem, PickerPackageItem
+	from libraryOpPicker.libraryOpPicker import LibraryOpPicker, PickerCompItem, PickerPackageItem
 
 	iop.picker = LibraryOpPicker(COMP())
 
@@ -37,6 +37,7 @@ class LibraryPalette(CallbacksExt):
 		super().__init__(ownerComp)
 		# noinspection PyTypeChecker
 		self.ownerComp = ownerComp  # type: _PaletteComp
+		self._closeTimer = ownerComp.op('closeTimer')
 
 	def _libraryContext(self):
 		return LibraryContext(
@@ -170,3 +171,54 @@ class LibraryPalette(CallbacksExt):
 			return
 		h = listComp.par.rows * rowHeight + 60
 		heightPar.val = tdu.clamp(h, self.ownerComp.par.Minheight, self.ownerComp.par.Maxheight)
+
+	def Show(self, _=None):
+		self.open()
+
+	def open(self):
+		self._resetCloseTimer()
+		self.ownerComp.op('window').par.winopen.pulse()
+		self._resetState()
+		ipar.uiState.Pinopen = False
+		# ext.picker.Loaditems()
+		# ext.picker.FocusFilterField()
+
+	def close(self):
+		self._resetCloseTimer()
+		self.ownerComp.op('window').par.winclose.pulse()
+		ipar.uiState.Pinopen = False
+
+	def resetState(self):
+		self._resetCloseTimer()
+		self._resetState()
+
+	def onCloseTimerComplete(self):
+		if ipar.uiState.Pinopen:
+			self._resetCloseTimer()
+			return
+		self.close()
+
+	def _resetCloseTimer(self):
+		timer = self._closeTimer
+		timer.par.initialize.pulse()
+		timer.par.active = False
+
+	def _startCloseTimer(self):
+		timer = self._closeTimer
+		timer.par.active = True
+		timer.par.start.pulse()
+
+	def onPanelInsideChange(self, val: bool):
+		if val:
+			self._resetCloseTimer()
+		else:
+			self._startCloseTimer()
+
+	def _resetState(self):
+		# ext.picker.Resetstate()
+		pass
+
+	def onKeyboardShortcut(self, shortcutName: str):
+		if shortcutName == 'esc':
+			self.close()
+
