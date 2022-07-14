@@ -88,6 +88,10 @@ def detachTox(comp: 'COMP'):
 	comp.par.reloadtoxonstart.val = False
 	comp.par.externaltox.expr = ''
 	comp.par.externaltox.val = ''
+	comp.par.reloadcustom.expr = ''
+	comp.par.reloadcustom.val = False
+	comp.par.reloadbuiltin.expr = ''
+	comp.par.reloadbuiltin.val = False
 
 class Action:
 	def __init__(self, func: Optional[Callable], args: list = None):
