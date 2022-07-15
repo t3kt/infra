@@ -227,7 +227,7 @@ class PackageInfo:
 
 	@property
 	def packageName(self):
-		name = str(self.metaPar.Packagename)
+		name = str(self.metaPar['Packagename'])
 		if name:
 			return name
 		return self.packageId.rsplit('.', maxsplit=1)[1]
