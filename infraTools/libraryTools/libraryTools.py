@@ -50,6 +50,10 @@ class LibraryTools(CallbacksExt):
 		info.opVersion = versionVal
 		info.metaPar.Optype.readOnly = True
 		info.metaPar.Opversion.readOnly = True
+		packageInfo = PackageInfo(comp.parent())
+		if packageInfo:
+			info.metaPar.Packagename = packageInfo.packageName
+			info.metaPar.Packageid = packageInfo.packageId
 		self._updateMetaLibraryProperties(info)
 		self.DoCallback('onUpdateComponentMetadata', {
 			'libraryTools': self,
@@ -120,8 +124,10 @@ class LibraryTools(CallbacksExt):
 		context = self.GetLibraryContext()
 		info = context.validateAndGetPackageInfo(comp)
 		info.packageId = context.generateOpId(comp)
+		info.packageName = info.packageId.rsplit('.', maxsplit=1)[1]
 		info.metaPar.Hostop.readOnly = True
 		info.metaPar.Packageid.readOnly = True
+		info.metaPar.Packagename.readOnly = True
 		self._updateMetaLibraryProperties(info)
 		self.DoCallback('onUpdatePackageMetadata', {
 			'libraryTools': self,

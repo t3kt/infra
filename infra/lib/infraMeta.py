@@ -22,12 +22,15 @@ if False:
 		Optype: 'StrParamT'
 		Opversion: 'StrParamT'
 		Opstatus: 'StrParamT'
+		Packageid: 'StrParamT'
+		Packagename: 'StrParamT'
 
 	class _CompMetaCompT(COMP):
 		par: _CompMetaParsT
 
 	class _PackageMetaParsT(_MetaParsT):
 		Packageid: 'StrParamT'
+		Packagename: 'StrParamT'
 
 	class _PackageMetaCompT(COMP):
 		par: _PackageMetaParsT
@@ -62,12 +65,12 @@ class CompInfo:
 			self.metaComp = o
 			self.metaPar = self.metaComp.par
 		else:
-			libInfo = LibraryInfo.findContainingLibraryOf(o)
-			if libInfo and libInfo.isComponent(o, checkMaster=False):
-				self._libInfo = libInfo
-				self.comp = o
-			else:
-				self.comp = None
+			# libInfo = LibraryInfo.findContainingLibraryOf(o)
+			# if libInfo and libInfo.isComponent(o, checkMaster=False):
+			# 	self._libInfo = libInfo
+			# 	self.comp = o
+			# else:
+			# 	self.comp = None
 			self.metaComp = None
 			self.metaPar = None
 
@@ -221,6 +224,17 @@ class PackageInfo:
 	@packageId.setter
 	def packageId(self, val: str):
 		self.metaPar.Packageid = val
+
+	@property
+	def packageName(self):
+		name = str(self.metaPar.Packagename)
+		if name:
+			return name
+		return self.packageId.rsplit('.', maxsplit=1)[1]
+
+	@packageName.setter
+	def packageName(self, val: str):
+		self.metaPar.Packagename = val
 
 class LibraryInfo:
 	comp: 'Optional[COMP]'

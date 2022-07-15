@@ -32,6 +32,7 @@ class LibraryIndex:
 		dat.clear()
 		dat.appendRow([
 			'packageId',
+			'packageName',
 			'path',
 			'relPath',
 			'depth',
@@ -44,6 +45,7 @@ class LibraryIndex:
 			relPath = context.packageRoot.relativePath(package).strip('./')
 			dat.appendRow([
 				info.packageId,
+				info.packageName,
 				package.path,
 				relPath,
 				relPath.count('/'),
