@@ -114,18 +114,15 @@ class Builder(ABC):
 		libContext = self.getLibraryContext()
 		comps = libContext.componentsIn(package, recursive=False)
 		self.log(f'Processing {len(comps)} components in {package}')
-		def _continue():
-			self.log(f'Finished processing package {package}')
-			self.queueCall(thenRun)
-		self.queueCall(Action(self.processCompsStage, [comps, _continue]))
 
-	def processCompsStage(self, comps: List['COMP'], thenRun: Callable):
-		if not comps:
-			self.queueCall(thenRun)
-			return
-		comp = comps.pop(0)
-		self.context.focusInNetworkPane(comp)
-		self.queueCall(Action(self.processComp, [comp, thenRun]))
+		def _stage():
+			if not comps:
+				self.log(f'Finished processing package {package}')
+				self.queueCall(thenRun)
+			else:
+				comp = comps.pop(0)
+				self.queueCall(Action(self.processComp, [comp, _stage]))
+		self.queueCall(_stage)
 
 	def processComp(self, comp: 'COMP', thenRun: Callable):
 		self.log(f'Processing comp {comp}')
