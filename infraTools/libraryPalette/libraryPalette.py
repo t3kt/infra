@@ -172,7 +172,7 @@ class LibraryPalette(CallbacksExt):
 		h = listComp.par.rows * rowHeight + 60
 		heightPar.val = tdu.clamp(h, self.ownerComp.par.Minheight, self.ownerComp.par.Maxheight)
 
-	def Show(self, _=None):
+	def Open(self, _=None):
 		self.open()
 
 	def open(self):

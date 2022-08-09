@@ -27,5 +27,5 @@ def onKey(dat, key, character, alt, lAlt, rAlt, ctrl, lCtrl, rCtrl, shift, lShif
 # shortcutName is the name of the shortcut
 
 def onShortcut(dat, shortcutName, time):
-	ext.palette.Show()
+	ext.palette.open()
 	
