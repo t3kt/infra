@@ -84,8 +84,8 @@ def detachTox(comp: 'COMP'):
 		return
 	if not comp.par.externaltox and comp.par.externaltox.mode == ParMode.CONSTANT:
 		return
-	comp.par.reloadtoxonstart.expr = ''
-	comp.par.reloadtoxonstart.val = False
+	comp.par.enableexternaltox.expr = ''
+	comp.par.enableexternaltox.val = False
 	comp.par.externaltox.expr = ''
 	comp.par.externaltox.val = ''
 	comp.par.reloadcustom.expr = ''
