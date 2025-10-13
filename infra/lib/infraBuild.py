@@ -159,7 +159,7 @@ class Builder(ABC):
 		library.par.externaltox = ''
 		library.par.enablecloning = False
 		library.par.savebackup = True
-		library.par.reloadtoxonstart = True
+		library.par.enableexternaltox = True
 		library.par.reloadcustom = True
 		library.par.reloadbuiltin = True
 		focusFirstCustomParameterPage(library)

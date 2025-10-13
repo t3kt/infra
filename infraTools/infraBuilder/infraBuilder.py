@@ -103,8 +103,8 @@ class _InfraBuilderBase(Builder):
 	def _updateComponentParams(self, comp: 'COMP'):
 		self.log(f'Updating component params {comp}')
 		comp.par.enablecloning = False
-		comp.par.reloadtoxonstart.expr = ''
-		comp.par.reloadtoxonstart.val = False
+		comp.par.enableexternaltox.expr = ''
+		comp.par.enableexternaltox.val = False
 		comp.par.reloadcustom.expr = ''
 		comp.par.reloadcustom.val = False
 		comp.par.reloadbuiltin.expr = ''
