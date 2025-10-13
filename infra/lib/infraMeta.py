@@ -326,6 +326,7 @@ class LibraryContext:
 		# noinspection PyTypeChecker
 		metaCompOrRoot = op(metaCompOrRoot)  # type: Union[_LibraryMetaCompT, COMP]
 		if not metaCompOrRoot or not metaCompOrRoot.isCOMP:
+			self.libraryInfo = None
 			return
 		self.libraryInfo = LibraryInfo(metaCompOrRoot)
 		self.libraryRoot = self.libraryInfo.comp
@@ -339,26 +340,38 @@ class LibraryContext:
 
 	@property
 	def packageRoot(self) -> 'Optional[COMP]':
+		if not self.valid:
+			return None
 		return self.libraryInfo.packageRoot
 
 	@property
 	def componentTags(self) -> 'List[str]':
+		if not self.valid:
+			return []
 		return self.libraryInfo.componentTags
 
 	@property
 	def packageTags(self) -> 'List[str]':
+		if not self.valid:
+			return []
 		return self.libraryInfo.packageTags
 
 	@property
 	def libraryName(self):
+		if not self.valid:
+			return None
 		return self.libraryInfo.libraryName
 
 	@property
 	def libraryVersion(self):
+		if not self.valid:
+			return None
 		return self.libraryInfo.libraryVersion
 
 	@property
 	def libraryRootTox(self):
+		if not self.valid:
+			return None
 		return self.libraryRoot.par.externaltox.eval() if self.libraryRoot else None
 
 	def resolvePath(self, path: str) -> 'Optional[COMP]':
